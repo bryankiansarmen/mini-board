@@ -23,6 +23,10 @@ const eslintConfig = defineConfig([
           ],
         },
       ],
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
     },
   },
   // Allow Route Handlers to import the service-role client. This override

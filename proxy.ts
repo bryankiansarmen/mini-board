@@ -1,6 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+const AUTH_ROUTES = ["/login", "/signup"];
+const PROTECTED_ROUTES = ["/workspaces", "/boards"];
+
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -35,7 +38,32 @@ export async function proxy(request: NextRequest) {
 
   // Validates the JWT signature and refreshes the session when needed,
   // writing the updated tokens back to the response cookies above.
-  await supabase.auth.getClaims();
+  const { data } = await supabase.auth.getClaims();
+  const isAuthenticated = Boolean(data?.claims);
+
+  const { pathname } = request.nextUrl;
+  const isAuthRoute = AUTH_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
+  );
+  const isProtectedRoute = PROTECTED_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
+  );
+
+  if (isProtectedRoute && !isAuthenticated) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    return NextResponse.redirect(url, {
+      headers: supabaseResponse.headers,
+    });
+  }
+
+  if (isAuthRoute && isAuthenticated) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/workspaces";
+    return NextResponse.redirect(url, {
+      headers: supabaseResponse.headers,
+    });
+  }
 
   return supabaseResponse;
 }
