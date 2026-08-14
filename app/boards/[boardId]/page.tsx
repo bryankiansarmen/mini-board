@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CreateColumnForm } from "@/components/board/create-column-form";
 import { BoardView } from "@/components/board/board-view";
-import type { ColumnRow } from "@/types";
+import type { ColumnRow, CardRow } from "@/types";
 
 export const metadata: Metadata = {
   title: "Board | MiniBoard",
@@ -60,6 +60,22 @@ export default async function BoardPage({
 
   const columns = (columnsResult.data ?? []) as ColumnRow[];
 
+  // Fetch cards for all columns in one query (avoids an N+1 per column).
+  // RLS scopes rows to boards the caller is a member of.
+  const { data: cardsData } =
+    columns.length > 0
+      ? await supabase
+          .from("cards")
+          .select("*")
+          .in(
+            "column_id",
+            columns.map((column) => column.id),
+          )
+          .order("position", { ascending: true })
+      : { data: [] };
+
+  const cards = (cardsData ?? []) as CardRow[];
+
   return (
     <main className="flex min-h-full flex-1 flex-col">
       <header className="border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
@@ -93,7 +109,7 @@ export default async function BoardPage({
             <CreateColumnForm boardId={board.id} />
           </div>
 
-          <BoardView columns={columns} />
+          <BoardView columns={columns} cards={cards} />
         </div>
       </section>
     </main>

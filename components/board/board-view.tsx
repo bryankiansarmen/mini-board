@@ -21,9 +21,15 @@ import { Column } from "@/components/board/column";
 import { DeleteColumnModal } from "@/components/board/delete-column-modal";
 import { deleteColumn, reorderColumn } from "@/lib/columns/actions";
 import { calculatePositionAt } from "@/lib/columns/position";
-import type { ColumnRow } from "@/types";
+import type { ColumnRow, CardRow } from "@/types";
 
-export function BoardView({ columns: initialColumns }: { columns: ColumnRow[] }) {
+export function BoardView({
+  columns: initialColumns,
+  cards,
+}: {
+  columns: ColumnRow[];
+  cards: CardRow[];
+}) {
   const router = useRouter();
   // Local state for optimistic column reordering. The server render (from
   // props) is the source of truth after any mutation, so when the props
@@ -38,6 +44,14 @@ export function BoardView({ columns: initialColumns }: { columns: ColumnRow[] })
     setPrevInitial(initialColumns);
     setColumns(initialColumns);
   }
+
+  const cardsByColumn = cards.reduce<Record<string, CardRow[]>>((acc, card) => {
+    if (!acc[card.column_id]) {
+      acc[card.column_id] = [];
+    }
+    acc[card.column_id].push(card);
+    return acc;
+  }, {});
 
   // distance: 5 keeps plain clicks and double-clicks working on the header
   // (rename, delete) while still starting a drag once the pointer actually
@@ -110,7 +124,7 @@ export function BoardView({ columns: initialColumns }: { columns: ColumnRow[] })
               <Column
                 key={column.id}
                 column={column}
-                cardCount={0}
+                cards={cardsByColumn[column.id] ?? []}
                 onRequestDelete={() => setPendingDelete(column)}
               />
             ))}
@@ -120,7 +134,9 @@ export function BoardView({ columns: initialColumns }: { columns: ColumnRow[] })
 
       <DeleteColumnModal
         column={pendingDelete}
-        cardCount={0}
+        cardCount={
+          pendingDelete ? (cardsByColumn[pendingDelete.id]?.length ?? 0) : 0
+        }
         deleting={isDeleting}
         error={deleteError}
         onCancel={() => setPendingDelete(null)}

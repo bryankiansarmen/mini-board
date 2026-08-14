@@ -5,15 +5,19 @@ import { useRouter } from "next/navigation";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { renameColumn } from "@/lib/columns/actions";
-import type { ColumnRow } from "@/types";
+import { deleteCard } from "@/lib/cards/actions";
+import { Card } from "@/components/board/card";
+import { CreateCardForm } from "@/components/board/create-card-form";
+import { DeleteCardModal } from "@/components/board/delete-card-modal";
+import type { ColumnRow, CardRow } from "@/types";
 
 export function Column({
   column,
-  cardCount,
+  cards,
   onRequestDelete,
 }: {
   column: ColumnRow;
-  cardCount: number;
+  cards: CardRow[];
   onRequestDelete: (columnId: string) => void;
 }) {
   const router = useRouter();
@@ -21,6 +25,9 @@ export function Column({
   const [title, setTitle] = useState(column.title);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [cardToDelete, setCardToDelete] = useState<CardRow | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isDeletingCard, startDeleteCard] = useTransition();
 
   const {
     attributes,
@@ -77,6 +84,21 @@ export function Column({
     });
   }
 
+  function confirmDeleteCard() {
+    if (!cardToDelete) return;
+
+    setDeleteError(null);
+    startDeleteCard(async () => {
+      const result = await deleteCard(cardToDelete.id);
+      if (result.error) {
+        setDeleteError(result.error);
+        return;
+      }
+      setCardToDelete(null);
+      router.refresh();
+    });
+  }
+
   return (
     <div
       ref={setNodeRef}
@@ -123,7 +145,7 @@ export function Column({
                 {column.title}
               </h3>
               <span className="shrink-0 rounded bg-zinc-200 px-1.5 py-0.5 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
-                {cardCount}
+                {cards.length}
               </span>
             </>
           )}
@@ -158,13 +180,27 @@ export function Column({
       </div>
 
       <div className="flex-1 space-y-2 p-2">
-        {cardCount === 0 && (
+        {cards.length === 0 ? (
           <div className="flex h-32 items-center justify-center rounded-md border-2 border-dashed border-zinc-300 dark:border-zinc-700">
             <p className="px-2 text-center text-xs text-zinc-400 dark:text-zinc-500">
               Drop cards here
             </p>
           </div>
+        ) : (
+          <div className="space-y-2">
+            {cards.map((card) => (
+              <Card
+                key={card.id}
+                card={card}
+                onRequestDelete={(cardId) =>
+                  setCardToDelete(cards.find((c) => c.id === cardId) ?? null)
+                }
+              />
+            ))}
+          </div>
         )}
+
+        <CreateCardForm columnId={column.id} />
       </div>
 
       {pending && !editing && (
@@ -172,6 +208,14 @@ export function Column({
           Saving…
         </p>
       )}
+
+      <DeleteCardModal
+        card={cardToDelete}
+        deleting={isDeletingCard}
+        error={deleteError}
+        onCancel={() => setCardToDelete(null)}
+        onConfirm={confirmDeleteCard}
+      />
     </div>
   );
 }

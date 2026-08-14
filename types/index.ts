@@ -36,3 +36,16 @@ export type ColumnRow = {
   position: number;
   created_at: string;
 };
+
+export type CardRow = {
+  id: string;
+  column_id: string;
+  title: string;
+  description: string | null;
+  position: number;
+  due_date: string | null;
+  assignee_id: string | null;
+  labels: string[];
+  created_at: string;
+  updated_at: string;
+};
