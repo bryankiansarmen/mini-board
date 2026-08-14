@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { renameBoard } from "@/lib/boards/actions";
 import type { BoardRow } from "@/types";
@@ -19,8 +19,36 @@ export function BoardCard({
   const [title, setTitle] = useState(board.title);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const navigateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function handleClick() {
+    // A single click navigates to the board; a double-click renames instead.
+    // Delay the navigation briefly and cancel it if a second click arrives.
+    if (navigateTimer.current) {
+      clearTimeout(navigateTimer.current);
+    }
+    navigateTimer.current = setTimeout(() => {
+      router.push(`/boards/${board.id}`);
+    }, 250);
+  }
+
+  function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    // Only respond when the card itself is the target — pressing Enter inside
+    // the rename input must not navigate.
+    if (event.target !== event.currentTarget) {
+      return;
+    }
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      router.push(`/boards/${board.id}`);
+    }
+  }
 
   function startEditing() {
+    if (navigateTimer.current) {
+      clearTimeout(navigateTimer.current);
+      navigateTimer.current = null;
+    }
     setTitle(board.title);
     setError(null);
     setEditing(true);
@@ -55,8 +83,12 @@ export function BoardCard({
 
   return (
     <div
-      className="group relative rounded-lg border border-zinc-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900"
+      role="link"
+      tabIndex={0}
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
       onDoubleClick={canManage ? startEditing : undefined}
+      className="group cursor-pointer rounded-lg border border-zinc-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900"
     >
       {editing ? (
         <div className="space-y-2">
@@ -94,7 +126,10 @@ export function BoardCard({
             <button
               type="button"
               aria-label={`Delete ${board.title}`}
-              onClick={() => onRequestDelete(board.id)}
+              onClick={(event) => {
+                event.stopPropagation();
+                onRequestDelete(board.id);
+              }}
               className="shrink-0 rounded p-1 text-zinc-400 opacity-0 transition-opacity hover:text-red-600 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 group-hover:opacity-100 dark:text-zinc-500 dark:hover:text-red-400"
             >
               <svg

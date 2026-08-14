@@ -28,3 +28,11 @@ export type BoardRow = {
   position: number;
   created_at: string;
 };
+
+export type ColumnRow = {
+  id: string;
+  board_id: string;
+  title: string;
+  position: number;
+  created_at: string;
+};
