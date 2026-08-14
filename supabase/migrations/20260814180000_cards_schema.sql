@@ -1,6 +1,6 @@
 -- cards table + RLS policies, index, and grants.
 -- Only the table this task needs, mirroring columns_schema.sql.
--- description / due_date / assignee_id / labels exist per DATABASE_SCHEMA.md
+-- description / due_date / assignee_id / labels exist per
 -- but are only surfaced in the UI from E5 (card detail modal).
 
 -- Cards

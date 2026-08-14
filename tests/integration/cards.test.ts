@@ -18,6 +18,7 @@ let outsiderId: string;
 let workspaceId: string;
 let boardId: string;
 let columnId: string;
+let column2Id: string;
 
 async function userClient(email: string): Promise<SupabaseClient> {
   // Sign in through a throwaway client so the shared `service` client never
@@ -134,6 +135,23 @@ beforeAll(async () => {
   }
   columnId = column.id;
 
+  // A second column on the same board — used by the moveCard tests so the
+  // target column is always scoped to the same board (mirrors the guard in
+  // the moveCard server action).
+  const { data: column2, error: column2Error } = await service
+    .from("columns")
+    .insert({
+      board_id: boardId,
+      title: "Int Cards Col 2",
+      position: 1,
+    })
+    .select("id")
+    .single();
+  if (column2Error || !column2) {
+    throw new Error(`failed to create second test column: ${column2Error?.message}`);
+  }
+  column2Id = column2.id;
+
   ownerClient = await userClient(emails.owner);
   memberClient = await userClient(emails.member);
   outsiderClient = await userClient(emails.outsider);
@@ -224,6 +242,55 @@ describe("cards: update", () => {
       .eq("id", card.id)
       .maybeSingle();
     expect(stillThere?.title).toBe("Secure Card");
+  });
+});
+
+describe("cards: move", () => {
+  it("lets a member move a card into another column on the same board", async () => {
+    const card = await createCard(memberClient, "Move Me", 60);
+
+    const { data, error } = await memberClient
+      .from("cards")
+      .update({
+        column_id: column2Id,
+        position: 0.5,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", card.id)
+      .select("column_id, position")
+      .single();
+
+    expect(error).toBeNull();
+    expect(data?.column_id).toBe(column2Id);
+    expect(data?.position).toBe(0.5);
+  });
+
+  it("denies a non-member from moving a card (RLS negative test)", async () => {
+    const card = await createCard(ownerClient, "Secure Move", 61);
+
+    const { error, data } = await outsiderClient
+      .from("cards")
+      .update({
+        column_id: column2Id,
+        position: 0.75,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", card.id)
+      .select("column_id");
+
+    if (error) {
+      expect(error.message.toLowerCase()).toContain("row-level security");
+    } else {
+      expect(data ?? []).toHaveLength(0);
+    }
+
+    // The card must still be in its original column.
+    const { data: stillThere } = await service
+      .from("cards")
+      .select("column_id")
+      .eq("id", card.id)
+      .maybeSingle();
+    expect(stillThere?.column_id).toBe(columnId);
   });
 });
 

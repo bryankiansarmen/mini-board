@@ -119,6 +119,72 @@ export async function updateCard(
   return {};
 }
 
+export async function moveCard(
+  cardId: string,
+  toColumnId: string,
+  newPosition: number,
+): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { error: "You must be signed in to move a card." };
+  }
+
+  const { data: card } = await supabase
+    .from("cards")
+    .select("column_id")
+    .eq("id", cardId)
+    .maybeSingle();
+
+  if (!card) {
+    return { error: "Card not found." };
+  }
+
+  const { data: sourceColumn } = await supabase
+    .from("columns")
+    .select("board_id")
+    .eq("id", card.column_id)
+    .maybeSingle();
+
+  if (!sourceColumn) {
+    return { error: "Column not found." };
+  }
+
+  const { data: targetColumn } = await supabase
+    .from("columns")
+    .select("board_id")
+    .eq("id", toColumnId)
+    .maybeSingle();
+
+  if (!targetColumn) {
+    return { error: "Target column not found." };
+  }
+
+  if (targetColumn.board_id !== sourceColumn.board_id) {
+    return { error: "Cannot move a card across boards." };
+  }
+
+  const { error: updateError } = await supabase
+    .from("cards")
+    .update({
+      column_id: toColumnId,
+      position: newPosition,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", cardId);
+
+  if (updateError) {
+    return { error: updateError.message ?? "Failed to move card." };
+  }
+
+  revalidatePath(`/boards/${sourceColumn.board_id}`);
+  return {};
+}
+
 export async function deleteCard(
   cardId: string,
 ): Promise<{ error?: string }> {

@@ -1,15 +1,18 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   DndContext,
+  DragOverlay,
   KeyboardSensor,
   PointerSensor,
+  TouchSensor,
   closestCenter,
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragStartEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -21,11 +24,14 @@ import { Column } from "@/components/board/column";
 import { DeleteColumnModal } from "@/components/board/delete-column-modal";
 import { deleteColumn, reorderColumn } from "@/lib/columns/actions";
 import { calculatePositionAt } from "@/lib/columns/position";
+import { moveCard } from "@/lib/cards/actions";
+import { computeCardMove } from "@/lib/cards/position";
+import { useBoardStore } from "@/lib/store/board";
 import type { ColumnRow, CardRow } from "@/types";
 
 export function BoardView({
   columns: initialColumns,
-  cards,
+  cards: initialCards,
 }: {
   columns: ColumnRow[];
   cards: CardRow[];
@@ -40,9 +46,43 @@ export function BoardView({
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, startDelete] = useTransition();
 
+  const cards = useBoardStore((state) => state.cards);
+  const hydrateCards = useBoardStore((state) => state.hydrateCards);
+  const moveCardOptimistic = useBoardStore((state) => state.moveCardOptimistic);
+  const rollbackCards = useBoardStore((state) => state.rollbackCards);
+
+  // The store starts empty; hydrate it on the first render too. Using a null
+  // sentinel (not useState(initialCards)) guarantees the first render always
+  // hydrates, since the store's default cards: [] must be replaced by the
+  // server props before any card can render.
+  const [prevCards, setPrevCards] = useState<CardRow[] | null>(null);
+  if (initialCards !== prevCards) {
+    setPrevCards(initialCards);
+    hydrateCards(initialCards);
+  }
+
   if (initialColumns !== prevInitial) {
     setPrevInitial(initialColumns);
     setColumns(initialColumns);
+  }
+
+  // The card being dragged, for the DragOverlay ghost.
+  const [activeCard, setActiveCard] = useState<CardRow | null>(null);
+
+  // Non-blocking error toast for rollback-on-failed-write.
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+    };
+  }, []);
+
+  function showToast(message: string) {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast(message);
+    toastTimer.current = setTimeout(() => setToast(null), 5000);
   }
 
   const cardsByColumn = cards.reduce<Record<string, CardRow[]>>((acc, card) => {
@@ -53,22 +93,132 @@ export function BoardView({
     return acc;
   }, {});
 
-  // distance: 5 keeps plain clicks and double-clicks working on the header
-  // (rename, delete) while still starting a drag once the pointer actually
-  // moves.
+  const columnIds = columns.map((c) => c.id);
+
+  // distance: 5 keeps plain clicks and double-clicks working on the card and
+  // column header (rename, delete) while still starting a drag once the
+  // pointer actually moves. TouchSensor uses a 250ms long-press so dragging
+  // doesn't fight vertical scroll on mobile (DESIGN_SYSTEM breakpoint note).
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
   );
 
+  function handleDragStart(event: DragStartEvent) {
+    const card = cards.find((c) => c.id === event.active.id);
+    if (card) setActiveCard(card);
+  }
+
+  function handleDragCancel() {
+    setActiveCard(null);
+  }
+
   function handleDragEnd(event: DragEndEvent) {
+    setActiveCard(null);
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
+    const isColumn = columns.some((c) => c.id === active.id);
+    if (isColumn) {
+      handleColumnDragEnd(event);
+      return;
+    }
+
+    void handleCardDragEnd(event);
+  }
+
+  async function handleCardDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over) return;
+
+    const overId = String(over.id);
+
+    // Resolve the drop target. `over` can be a card, a column's card-drop
+    // droppable (`column-drop-<id>`), or the column sortable itself.
+    let targetColumnId: string | null = null;
+    let overCardId: string | null = null;
+
+    if (overId.startsWith("column-drop-")) {
+      targetColumnId = overId.replace("column-drop-", "");
+    } else {
+      const overCard = cards.find((c) => c.id === overId);
+      if (overCard) {
+        targetColumnId = overCard.column_id;
+        overCardId = overCard.id;
+      } else if (columns.some((c) => c.id === overId)) {
+        targetColumnId = overId;
+      }
+    }
+
+    if (!targetColumnId) return;
+
+    const move = computeCardMove(
+      cards,
+      String(active.id),
+      targetColumnId,
+      overCardId,
+    );
+
+    // No-op drop (card didn't change position) — nothing to write.
+    if (!move) return;
+
+    const previous = cards;
+
+    // Optimistic update: re-render instantly, then write to the DB.
+    moveCardOptimistic(String(active.id), move.columnId, move.position);
+
+    // A failed fetch rejects (throws) rather than returning { error }, so wrap
+    // the call to guarantee rollback either way.
+    let result: { error?: string };
+    try {
+      result = await moveCard(String(active.id), move.columnId, move.position);
+    } catch {
+      rollbackCards(previous);
+      showToast("Couldn't move card — your changes were reverted.");
+      return;
+    }
+
+    if (result.error) {
+      // Roll back to the last known-good position and surface a non-blocking
+      // error toast — never a silent failure.
+      rollbackCards(previous);
+      showToast(`Couldn't move card: ${result.error}`);
+      return;
+    }
+
+    router.refresh();
+  }
+
+  function handleColumnDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    // `over` may resolve to the column-drop droppable inside a column or even
+    // a card; map it back to the owning column so column drags always target a
+    // column id.
+    let overColumnId: string;
+    const overId = String(over.id);
+    if (overId.startsWith("column-drop-")) {
+      overColumnId = overId.replace("column-drop-", "");
+    } else {
+      const overCard = cards.find((c) => c.id === overId);
+      if (overCard) {
+        overColumnId = overCard.column_id;
+      } else {
+        overColumnId = overId;
+      }
+    }
+
     const oldIndex = columns.findIndex((c) => c.id === active.id);
-    const newIndex = columns.findIndex((c) => c.id === over.id);
+    const newIndex = columns.findIndex((c) => c.id === overColumnId);
     if (oldIndex === -1 || newIndex === -1) return;
 
     const previous = columns;
@@ -80,6 +230,7 @@ export function BoardView({
     reorderColumn(String(active.id), newPosition).then((result) => {
       if (result.error) {
         setColumns(previous);
+        showToast(`Couldn't reorder column: ${result.error}`);
         return;
       }
       router.refresh();
@@ -106,10 +257,12 @@ export function BoardView({
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragCancel={handleDragCancel}
         onDragEnd={handleDragEnd}
       >
         <SortableContext
-          items={columns.map((c) => c.id)}
+          items={columnIds}
           strategy={horizontalListSortingStrategy}
         >
           <div className="flex items-start gap-4 overflow-x-auto pb-4">
@@ -130,7 +283,26 @@ export function BoardView({
             ))}
           </div>
         </SortableContext>
+
+        <DragOverlay>
+          {activeCard && (
+            <div className="w-72 cursor-grabbing rounded-md border border-zinc-200 bg-white p-2.5 pr-8 shadow-xl dark:border-zinc-700 dark:bg-zinc-900">
+              <p className="text-sm text-zinc-900 dark:text-zinc-50">
+                {activeCard.title}
+              </p>
+            </div>
+          )}
+        </DragOverlay>
       </DndContext>
+
+      {toast && (
+        <div
+          role="alert"
+          className="fixed bottom-4 right-4 z-50 max-w-sm rounded-lg border border-red-200 bg-white px-4 py-3 text-sm text-red-700 shadow-xl dark:border-red-900/50 dark:bg-zinc-900 dark:text-red-300"
+        >
+          {toast}
+        </div>
+      )}
 
       <DeleteColumnModal
         column={pendingDelete}

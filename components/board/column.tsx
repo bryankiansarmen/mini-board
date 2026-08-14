@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { useSortable } from "@dnd-kit/sortable";
+import { useDroppable } from "@dnd-kit/core";
+import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { renameColumn } from "@/lib/columns/actions";
 import { deleteCard } from "@/lib/cards/actions";
@@ -38,6 +39,13 @@ export function Column({
     transition,
     isDragging,
   } = useSortable({ id: column.id });
+
+  // The card list is a drop target so cards can be dropped into empty columns
+  // and between cards. `column-drop-${column.id}` distinguishes this droppable
+  // from the column's own sortable id in the drag-end handler.
+  const { setNodeRef: setCardDropRef, isOver } = useDroppable({
+    id: `column-drop-${column.id}`,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -179,7 +187,14 @@ export function Column({
         )}
       </div>
 
-      <div className="flex-1 space-y-2 p-2">
+      <div
+        ref={setCardDropRef}
+        className={`flex-1 space-y-2 p-2 transition-colors ${
+          isOver
+            ? "bg-indigo-500/10"
+            : ""
+        }`}
+      >
         {cards.length === 0 ? (
           <div className="flex h-32 items-center justify-center rounded-md border-2 border-dashed border-zinc-300 dark:border-zinc-700">
             <p className="px-2 text-center text-xs text-zinc-400 dark:text-zinc-500">
@@ -187,17 +202,22 @@ export function Column({
             </p>
           </div>
         ) : (
-          <div className="space-y-2">
-            {cards.map((card) => (
-              <Card
-                key={card.id}
-                card={card}
-                onRequestDelete={(cardId) =>
-                  setCardToDelete(cards.find((c) => c.id === cardId) ?? null)
-                }
-              />
-            ))}
-          </div>
+          <SortableContext
+            items={cards.map((card) => card.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-2">
+              {cards.map((card) => (
+                <Card
+                  key={card.id}
+                  card={card}
+                  onRequestDelete={(cardId) =>
+                    setCardToDelete(cards.find((c) => c.id === cardId) ?? null)
+                  }
+                />
+              ))}
+            </div>
+          </SortableContext>
         )}
 
         <CreateCardForm columnId={column.id} />

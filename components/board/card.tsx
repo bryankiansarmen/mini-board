@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { updateCard } from "@/lib/cards/actions";
 import type { CardRow } from "@/types";
 
@@ -17,6 +19,28 @@ export function Card({
   const [title, setTitle] = useState(card.title);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+
+  const {
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: card.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.6 : 1,
+  };
+
+  // While renaming, detach the drag listeners so typing in the input can't
+  // accidentally start a drag or trigger the keyboard sensor. Only `listeners`
+  // are spread (not `attributes`): `attributes` adds role="button", and the
+  // delete button is a child of this element — a role="button" wrapper around
+  // a real button is invalid HTML and collides with Playwright's button role
+  // locator (same lesson as the column header).
+  const handleProps = editing ? {} : { ...listeners };
 
   function startEditing() {
     setTitle(card.title);
@@ -53,7 +77,10 @@ export function Card({
 
   return (
     <div
-      className="group relative rounded-md border border-zinc-200 bg-white p-2.5 pr-8 transition-colors hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
+      ref={setNodeRef}
+      style={style}
+      {...handleProps}
+      className="group relative cursor-grab rounded-md border border-zinc-200 bg-white p-2.5 pr-8 transition-colors hover:border-zinc-300 hover:bg-zinc-50 active:cursor-grabbing dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
       onDoubleClick={!editing ? startEditing : undefined}
     >
       {editing ? (
@@ -87,6 +114,7 @@ export function Card({
           <button
             type="button"
             aria-label={`Delete ${card.title}`}
+            onPointerDown={(event) => event.stopPropagation()}
             onClick={() => onRequestDelete(card.id)}
             className="absolute right-1.5 top-1.5 rounded p-1 text-zinc-400 opacity-0 transition-opacity hover:text-red-600 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 group-hover:opacity-100 dark:text-zinc-500 dark:hover:text-red-400"
           >

@@ -2,7 +2,7 @@
 -- Writes go through the Route Handler with the service-role key (collision-
 -- checked code generation + atomic accept), so no client INSERT/DELETE policy.
 
--- Invite codes (MVP invite mechanism — see DECISIONS.md)
+-- Invite codes
 create table workspace_invite_codes (
   id uuid primary key default gen_random_uuid(),
   workspace_id uuid references workspaces(id) on delete cascade,

@@ -60,6 +60,21 @@ async function addCard(page: import("@playwright/test").Page, title: string) {
   await expect(page.getByText(title, { exact: true })).toBeVisible();
 }
 
+// Fills the "Card title" input inside a specific column. Needed once a board
+// has more than one column (getByLabel("Card title") would be ambiguous).
+async function addCardInColumn(
+  page: import("@playwright/test").Page,
+  columnHeading: string,
+  title: string,
+) {
+  const columnRoot = page
+    .getByRole("heading", { level: 3, name: columnHeading })
+    .locator("xpath=ancestor::div[contains(@class, 'w-72')]");
+  await columnRoot.getByLabel("Card title").fill(title);
+  await columnRoot.getByRole("button", { name: "+ Add card" }).click();
+  await expect(page.getByText(title, { exact: true })).toBeVisible();
+}
+
 async function generateInvite(
   page: import("@playwright/test").Page,
   workspaceName: string,
@@ -71,6 +86,157 @@ async function generateInvite(
   expect(code).toMatch(CODE_PATTERN);
   return code!;
 }
+
+// Waits for the board server action (moveCard) to commit before returning.
+// Without this, a hard reload right after a drag races the async DB write and
+// the reload can render stale positions (flaky under parallel workers).
+async function waitForMoveResponse(
+  page: import("@playwright/test").Page,
+): Promise<void> {
+  await page.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" &&
+      response.request().headers()["next-action"] !== undefined &&
+      response.url().includes("/boards/"),
+  );
+}
+
+async function dragCardToColumn(
+  page: import("@playwright/test").Page,
+  cardTitle: string,
+  targetHeading: string,
+) {
+  // Explicit mouse gestures rather than dragTo so dnd-kit's PointerSensor
+  // sees the intermediate pointermove steps (same approach as columns.spec.ts).
+  const card = page.getByText(cardTitle, { exact: true });
+  const target = page.getByRole("heading", { level: 3, name: targetHeading });
+  const cardBox = await card.boundingBox();
+  const targetBox = await target.boundingBox();
+  expect(cardBox).not.toBeNull();
+  expect(targetBox).not.toBeNull();
+  await page.mouse.move(cardBox!.x + cardBox!.width / 2, cardBox!.y + cardBox!.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(
+    targetBox!.x + targetBox!.width / 2,
+    targetBox!.y + targetBox!.height / 2,
+    { steps: 15 },
+  );
+  await page.mouse.up();
+}
+
+// Cards inside a single column, scoped via the column root (a w-72 div that
+// also contains the column's h3 heading). The loose space-y-2 locator used in
+// the order tests matches cards across every column, which is wrong once a
+// board has more than one column.
+async function columnCardTitles(
+  page: import("@playwright/test").Page,
+  heading: string,
+) {
+  const columnRoot = page
+    .getByRole("heading", { level: 3, name: heading })
+    .locator("xpath=ancestor::div[contains(@class, 'w-72')]");
+  return columnRoot.locator("p.text-sm");
+}
+
+test("card can be dragged between columns and the move persists after a reload", async ({
+  browser,
+}) => {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+
+  const stamp = Date.now();
+  const workspaceName = `Cards WS ${stamp}`;
+  const boardTitle = `Cards Board ${stamp}`;
+  const email = `e2e-cards-drag-${stamp}@example.com`;
+
+  await signUp(page, email);
+  await createWorkspace(page, workspaceName);
+  await openBoardsPage(page, workspaceName);
+
+  await page.getByLabel("Board title").fill(boardTitle);
+  await page.getByRole("button", { name: "Create board" }).click();
+  await expect(page.getByText(boardTitle)).toBeVisible();
+
+  await openBoard(page, boardTitle);
+  await addColumn(page, "To Do");
+  await addColumn(page, "Done");
+
+  await addCardInColumn(page, "To Do", "Drag Me");
+  await addCardInColumn(page, "To Do", "Keep Me");
+
+  // Set up the response waiter BEFORE the drag so the POST is captured.
+  const moveResponse = waitForMoveResponse(page);
+
+  // Drag the card from "To Do" onto the "Done" column.
+  await dragCardToColumn(page, "Drag Me", "Done");
+
+  // Wait for the server action to commit so the reload can't race it.
+  await moveResponse;
+
+  await expect(await columnCardTitles(page, "Done")).toHaveText(["Drag Me"]);
+  await expect(await columnCardTitles(page, "To Do")).toHaveText(["Keep Me"]);
+
+  // Persisted after a hard reload.
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "Create column" }),
+  ).toBeVisible();
+  await expect(await columnCardTitles(page, "Done")).toHaveText(["Drag Me"]);
+  await expect(await columnCardTitles(page, "To Do")).toHaveText(["Keep Me"]);
+
+  await context.close();
+});
+
+test("a failed card move rolls back and shows a toast", async ({
+  browser,
+}) => {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+
+  const stamp = Date.now();
+  const workspaceName = `Cards WS ${stamp}`;
+  const boardTitle = `Cards Board ${stamp}`;
+  const email = `e2e-cards-rollback-${stamp}@example.com`;
+
+  await signUp(page, email);
+  await createWorkspace(page, workspaceName);
+  await openBoardsPage(page, workspaceName);
+
+  await page.getByLabel("Board title").fill(boardTitle);
+  await page.getByRole("button", { name: "Create board" }).click();
+  await expect(page.getByText(boardTitle)).toBeVisible();
+
+  await openBoard(page, boardTitle);
+  await addColumn(page, "To Do");
+  await addColumn(page, "Done");
+  await addCardInColumn(page, "To Do", "Sticky Card");
+
+  // Make the moveCard server action (a POST carrying the Next-Action header to
+  // the board URL) fail. The optimistic update must roll back and a toast must
+  // appear — never a silent failure.
+  await page.route(/\/boards\/.+/, async (route) => {
+    const request = route.request();
+    if (request.method() === "POST" && request.headers()["next-action"]) {
+      await route.abort();
+    } else {
+      await route.continue();
+    }
+  });
+
+  await dragCardToColumn(page, "Sticky Card", "Done");
+
+  // Card rolled back to its original column.
+  await expect(await columnCardTitles(page, "To Do")).toHaveText(["Sticky Card"]);
+  await expect(await columnCardTitles(page, "Done")).toHaveText([]);
+
+  // Error toast surfaced. (Scoped by text: Next.js also injects a route
+  // announcer with role="alert".)
+  await expect(
+    page.getByRole("alert").filter({ hasText: "Couldn't move card" }),
+  ).toBeVisible();
+
+  await context.close();
+});
 
 test("card can be created, renamed on double-click, and deleted", async ({
   browser,
