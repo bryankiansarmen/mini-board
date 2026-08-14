@@ -20,3 +20,11 @@ export type WorkspaceInviteCodeRow = {
   expires_at: string;
   created_at: string;
 };
+
+export type BoardRow = {
+  id: string;
+  workspace_id: string;
+  title: string;
+  position: number;
+  created_at: string;
+};
