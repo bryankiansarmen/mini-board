@@ -54,18 +54,27 @@ export function BoardView({
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, startDelete] = useTransition();
 
-  const cards = useBoardStore((state) => state.cards);
+  // Cards are render state initialized from the server props and resynced
+  // during render — the same sanctioned pattern as columns above — so the
+  // first paint (including the server-rendered HTML) always shows the board's
+  // cards. The Zustand store stays as the optimistic-move engine only: the
+  // render path does NOT subscribe to its cards slice, because a render-phase
+  // store write would notify subscribers and trip React's "Cannot update a
+  // component while rendering a different component" error. Drag handlers
+  // read/write the store via getState() and mirror the result back into this
+  // local state.
+  const [cards, setCards] = useState(initialCards);
+  const [prevCards, setPrevCards] = useState<CardRow[] | null>(null);
   const hydrateCards = useBoardStore((state) => state.hydrateCards);
   const moveCardOptimistic = useBoardStore((state) => state.moveCardOptimistic);
   const rollbackCards = useBoardStore((state) => state.rollbackCards);
 
-  // The store starts empty; hydrate it on the first render too. Using a null
-  // sentinel (not useState(initialCards)) guarantees the first render always
-  // hydrates, since the store's default cards: [] must be replaced by the
-  // server props before any card can render.
-  const [prevCards, setPrevCards] = useState<CardRow[] | null>(null);
+  // A null sentinel (not useState(initialCards)) guarantees the first render
+  // always resyncs: prevCards starts null, so initialCards !== prevCards fires
+  // on mount and again whenever the server props actually change.
   if (initialCards !== prevCards) {
     setPrevCards(initialCards);
+    setCards(initialCards);
     hydrateCards(initialCards);
   }
 
@@ -180,8 +189,10 @@ export function BoardView({
 
     const previous = cards;
 
-    // Optimistic update: re-render instantly, then write to the DB.
+    // Optimistic update: re-render instantly, then write to the DB. The store
+    // computes the moved list; mirror it into local render state.
     moveCardOptimistic(String(active.id), move.columnId, move.position);
+    setCards(useBoardStore.getState().cards);
 
     // A failed fetch rejects (throws) rather than returning { error }, so wrap
     // the call to guarantee rollback either way.
@@ -190,6 +201,7 @@ export function BoardView({
       result = await moveCard(String(active.id), move.columnId, move.position);
     } catch {
       rollbackCards(previous);
+      setCards(previous);
       showToast("Couldn't move card — your changes were reverted.");
       return;
     }
@@ -198,6 +210,7 @@ export function BoardView({
       // Roll back to the last known-good position and surface a non-blocking
       // error toast — never a silent failure.
       rollbackCards(previous);
+      setCards(previous);
       showToast(`Couldn't move card: ${result.error}`);
       return;
     }
