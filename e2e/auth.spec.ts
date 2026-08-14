@@ -1,12 +1,11 @@
 import { expect, test } from "@playwright/test";
 
-const timestamp = Date.now();
-const email = `e2e-${timestamp}@example.com`;
 const password = "correct-horse-battery-staple";
 
 test("signs up, lands on /workspaces, and stays logged in after reload", async ({
   page,
 }) => {
+  const email = `e2e-auth-${Date.now()}@example.com`;
   await page.goto("/signup");
 
   await page.getByLabel("Email").fill(email);
@@ -27,6 +26,7 @@ test("signs up, lands on /workspaces, and stays logged in after reload", async (
 });
 
 test("logs in again after signing out", async ({ page }) => {
+  const email = `e2e-auth-${Date.now() + 1}@example.com`;
   await page.goto("/signup");
 
   await page.getByLabel("Email").fill(email);

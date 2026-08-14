@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { logout } from "@/lib/auth/actions";
 import { CreateWorkspaceForm } from "@/components/workspace/create-workspace-form";
+import { JoinWorkspaceForm } from "@/components/workspace/join-workspace-form";
+import { InviteButton } from "@/components/workspace/invite-button";
 import type { WorkspaceRow } from "@/types";
 
 export const metadata: Metadata = {
@@ -24,10 +26,26 @@ export default async function WorkspacesPage() {
     redirect("/login");
   }
 
-  const { data: workspaces } = await supabase
-    .from("workspaces")
-    .select("id, name, owner_id, created_at")
-    .order("created_at", { ascending: false });
+  const [workspacesResult, membershipsResult] = await Promise.all([
+    supabase
+      .from("workspaces")
+      .select("id, name, owner_id, created_at")
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("workspace_members")
+      .select("workspace_id, role")
+      .eq("user_id", user.id),
+  ]);
+
+  const workspaces = workspacesResult.data ?? [];
+  const adminWorkspaceIds = new Set(
+    (membershipsResult.data ?? [])
+      .filter((membership) => membership.role === "admin")
+      .map((membership) => membership.workspace_id),
+  );
+
+  const canManage = (workspace: WorkspaceRow) =>
+    workspace.owner_id === user.id || adminWorkspaceIds.has(workspace.id);
 
   return (
     <main className="flex min-h-full flex-1 flex-col">
@@ -46,30 +64,50 @@ export default async function WorkspacesPage() {
       </header>
 
       <section className="mx-auto w-full max-w-2xl flex-1 px-6 py-8">
-        <div className="mb-8 rounded-lg border border-zinc-200 p-5 dark:border-zinc-800">
-          <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-50">
-            Create a workspace
-          </h2>
-          <CreateWorkspaceForm />
+        <div className="grid gap-6 sm:grid-cols-2">
+          <div className="rounded-lg border border-zinc-200 p-5 dark:border-zinc-800">
+            <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-50">
+              Create a workspace
+            </h2>
+            <CreateWorkspaceForm />
+          </div>
+
+          <div className="rounded-lg border border-zinc-200 p-5 dark:border-zinc-800">
+            <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-50">
+              Join a workspace
+            </h2>
+            <p className="mb-3 text-sm text-zinc-500 dark:text-zinc-400">
+              Enter an invite code shared by a workspace Owner or Admin.
+            </p>
+            <JoinWorkspaceForm />
+          </div>
         </div>
 
-        <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-50">
+        <h2 className="mb-3 mt-8 text-base font-semibold text-zinc-900 dark:text-zinc-50">
           Your workspaces
         </h2>
 
-        {workspaces && workspaces.length > 0 ? (
+        {workspaces.length > 0 ? (
           <ul className="space-y-2">
             {workspaces.map((workspace: WorkspaceRow) => (
               <li key={workspace.id}>
-                <Link
-                  href={`/workspaces/${workspace.id}/boards`}
-                  className="flex items-center justify-between rounded-md border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 transition-colors hover:border-indigo-400 hover:bg-indigo-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:hover:border-indigo-500 dark:hover:bg-indigo-950"
-                >
-                  <span className="font-medium">{workspace.name}</span>
-                  <span className="text-xs text-zinc-400 dark:text-zinc-500">
-                    {workspace.owner_id === user.id ? "Owner" : "Member"}
-                  </span>
-                </Link>
+                <div className="flex items-center gap-3 rounded-md border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900">
+                  <Link
+                    href={`/workspaces/${workspace.id}/boards`}
+                    className="flex-1 text-sm text-zinc-900 transition-colors hover:text-indigo-600 dark:text-zinc-50 dark:hover:text-indigo-400"
+                  >
+                    <span className="font-medium">{workspace.name}</span>
+                    <span className="ml-2 text-xs text-zinc-400 dark:text-zinc-500">
+                      {workspace.owner_id === user.id ? "Owner" : "Member"}
+                    </span>
+                  </Link>
+                  {canManage(workspace) && (
+                    <InviteButton
+                      workspaceId={workspace.id}
+                      workspaceName={workspace.name}
+                    />
+                  )}
+                </div>
               </li>
             ))}
           </ul>

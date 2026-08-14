@@ -11,3 +11,12 @@ export type WorkspaceMemberRow = {
   role: "admin" | "member";
   joined_at: string;
 };
+
+export type WorkspaceInviteCodeRow = {
+  id: string;
+  workspace_id: string;
+  code: string;
+  created_by: string;
+  expires_at: string;
+  created_at: string;
+};
