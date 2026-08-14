@@ -101,6 +101,12 @@ export default async function WorkspacesPage() {
                       {workspace.owner_id === user.id ? "Owner" : "Member"}
                     </span>
                   </Link>
+                  <Link
+                    href={`/workspaces/${workspace.id}/members`}
+                    className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:border-indigo-400 hover:text-indigo-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-indigo-500 dark:hover:text-indigo-400"
+                  >
+                    Members
+                  </Link>
                   {canManage(workspace) && (
                     <InviteButton
                       workspaceId={workspace.id}
