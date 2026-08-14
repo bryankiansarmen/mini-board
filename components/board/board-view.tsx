@@ -22,10 +22,18 @@ import {
 } from "@dnd-kit/sortable";
 import { Column } from "@/components/board/column";
 import { DeleteColumnModal } from "@/components/board/delete-column-modal";
-import { deleteColumn, reorderColumn } from "@/lib/columns/actions";
+import {
+  deleteColumn,
+  renormalizeColumnPositions,
+  reorderColumn,
+} from "@/lib/columns/actions";
 import { calculatePositionAt } from "@/lib/columns/position";
-import { moveCard } from "@/lib/cards/actions";
+import {
+  moveCard,
+  renormalizeCardPositions,
+} from "@/lib/cards/actions";
 import { computeCardMove } from "@/lib/cards/position";
+import { detectPositionDrift } from "@/lib/shared/normalize";
 import { useBoardStore } from "@/lib/store/board";
 import type { ColumnRow, CardRow } from "@/types";
 
@@ -194,6 +202,18 @@ export function BoardView({
       return;
     }
 
+    // Position re-normalization: repeated midpoint drops between the same two
+    // neighbors eventually exhaust the gap. When the destination column has
+    // drifted within the threshold, re-normalize to whole-integer spacing
+    // (order unchanged) so future drops still have room.
+    const current = useBoardStore.getState().cards;
+    const targetPositions = current
+      .filter((card) => card.column_id === move.columnId)
+      .map((card) => card.position);
+    if (detectPositionDrift(targetPositions)) {
+      await renormalizeCardPositions(move.columnId);
+    }
+
     router.refresh();
   }
 
@@ -227,11 +247,20 @@ export function BoardView({
 
     // Optimistic update, roll back on failure.
     setColumns(reordered);
-    reorderColumn(String(active.id), newPosition).then((result) => {
+    reorderColumn(String(active.id), newPosition).then(async (result) => {
       if (result.error) {
         setColumns(previous);
         showToast(`Couldn't reorder column: ${result.error}`);
         return;
+      }
+      // Same drift guard as cards: exhaust the gap between two adjacent
+      // columns and the whole board re-normalizes to integer spacing.
+      const boardId = reordered[0]?.board_id;
+      if (
+        boardId &&
+        detectPositionDrift(reordered.map((column) => column.position))
+      ) {
+        await renormalizeColumnPositions(boardId);
       }
       router.refresh();
     });

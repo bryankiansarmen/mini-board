@@ -1,6 +1,10 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  detectPositionDrift,
+  renormalizePositions,
+} from "@/lib/shared/normalize";
 
 // Card CRUD is plain RLS-authorized Supabase CRUD — exercised through
 // user-scoped clients (anon key + the user's JWT), exactly like the server
@@ -346,6 +350,90 @@ describe("cards: non-member visibility", () => {
 
     expect(error).toBeNull();
     expect(data ?? []).toHaveLength(0);
+  });
+});
+
+describe("cards: position re-normalization", () => {
+  it("re-normalizes a column to whole-integer spacing after drift without reordering", async () => {
+    // Dedicated column so the shared columnId fixture (used by other tests)
+    // doesn't pollute the drift computation.
+    const { data: renormColumn, error: columnError } = await ownerClient
+      .from("columns")
+      .insert({ board_id: boardId, title: "ReNorm Col", position: 3 })
+      .select("id")
+      .single();
+    expect(columnError).toBeNull();
+    const renormColumnId = renormColumn!.id;
+
+    const insertCard = async (title: string, position: number) => {
+      const { data, error } = await ownerClient
+        .from("cards")
+        .insert({
+          column_id: renormColumnId,
+          title,
+          position,
+        })
+        .select("id, title, position")
+        .single();
+      if (error) throw new Error(`insert failed for ${title}: ${error.message}`);
+      return data;
+    };
+
+    // Anchor two neighbors, then insert 25 cards at successive midpoints
+    const first = await insertCard("ReNorm First", 0);
+    const last = await insertCard("ReNorm Last", 1);
+    const middleTitles: string[] = [];
+    let prev = first!.position;
+    const next = last!.position;
+    for (let i = 0; i < 25; i++) {
+      const position = (prev + next) / 2;
+      const card = await insertCard(`ReNorm Mid ${i}`, position);
+      middleTitles.push(card!.title);
+      prev = position;
+    }
+
+    const { data: before } = await ownerClient
+      .from("cards")
+      .select("id, title, position")
+      .eq("column_id", renormColumnId)
+      .order("position", { ascending: true });
+
+    const expectedOrder = ["ReNorm First", ...middleTitles, "ReNorm Last"];
+    expect((before ?? []).map((card) => card.title)).toEqual(expectedOrder);
+    expect(
+      detectPositionDrift((before ?? []).map((card) => card.position)),
+    ).toBe(true);
+
+    // Replicate the renormalizeCardPositions server action through the
+    // user-scoped client (the integration suite never imports server actions,
+    // which need a Next.js request context).
+    const normalized = renormalizePositions(before ?? []);
+    const results = await Promise.all(
+      normalized.map(({ id, position }) =>
+        memberClient
+          .from("cards")
+          .update({ position, updated_at: new Date().toISOString() })
+          .eq("id", id),
+      ),
+    );
+    expect(results.every((result) => result.error === null)).toBe(true);
+
+    const { data: after } = await ownerClient
+      .from("cards")
+      .select("title, position")
+      .eq("column_id", renormColumnId)
+      .order("position", { ascending: true });
+
+    // Whole-integer spacing and the exact same relative order no card moved.
+    expect((after ?? []).map((card) => card.title)).toEqual(expectedOrder);
+    expect((after ?? []).map((card) => card.position)).toEqual(
+      (after ?? []).map((_, i) => i),
+    );
+    // Every gap is now comfortably above the drift threshold.
+    const gaps = (after ?? [])
+      .slice(1)
+      .map((card, i) => card.position - (after ?? [])[i]!.position);
+    expect(Math.min(...gaps)).toBeGreaterThan(0.0001);
   });
 });
 

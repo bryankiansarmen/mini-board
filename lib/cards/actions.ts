@@ -2,6 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import {
+  detectPositionDrift,
+  renormalizePositions,
+} from "@/lib/shared/normalize";
 
 export type CardFormState = {
   error?: string;
@@ -182,6 +186,65 @@ export async function moveCard(
   }
 
   revalidatePath(`/boards/${sourceColumn.board_id}`);
+  return {};
+}
+
+// Re-normalizes a column's card positions to whole-integer spacing when its
+// adjacent positions have drifted within DRIFT_THRESHOLD (repeated midpoint
+// drops between the same two neighbors exhaust the gap). No-op when the
+// column is already within bounds — idempotent and safe to call defensively.
+export async function renormalizeCardPositions(
+  columnId: string,
+): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { error: "You must be signed in to re-normalize card positions." };
+  }
+
+  const { data: column } = await supabase
+    .from("columns")
+    .select("board_id")
+    .eq("id", columnId)
+    .maybeSingle();
+
+  if (!column) {
+    return { error: "Column not found." };
+  }
+
+  const { data: cards } = await supabase
+    .from("cards")
+    .select("id, position")
+    .eq("column_id", columnId)
+    .order("position", { ascending: true });
+
+  const positions = (cards ?? []).map((card) => card.position);
+  if (!detectPositionDrift(positions)) {
+    return {};
+  }
+
+  // Renormalize preserves relative order, then write every card's new whole-
+  // integer position. RLS scopes each update through the column's board.
+  const normalized = renormalizePositions(cards ?? []);
+  const results = await Promise.all(
+    normalized.map(({ id, position }) =>
+      supabase
+        .from("cards")
+        .update({ position, updated_at: new Date().toISOString() })
+        .eq("id", id),
+    ),
+  );
+
+  const failed = results.find((result) => result.error);
+  if (failed) {
+    return { error: failed.error?.message ?? "Failed to re-normalize cards." };
+  }
+
+  revalidatePath(`/boards/${column.board_id}`);
   return {};
 }
 

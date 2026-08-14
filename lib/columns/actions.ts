@@ -2,6 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import {
+  detectPositionDrift,
+  renormalizePositions,
+} from "@/lib/shared/normalize";
 
 export type ColumnFormState = {
   error?: string;
@@ -169,5 +173,48 @@ export async function reorderColumn(
   }
 
   revalidatePath(`/boards/${column.board_id}`);
+  return {};
+}
+
+// Re-normalizes a board's column positions to whole-integer spacing when
+// adjacent positions have drifted within DRIFT_THRESHOLD. Same semantics as
+// renormalizeCardPositions — no-op when the board is already within bounds.
+export async function renormalizeColumnPositions(
+  boardId: string,
+): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { error: "You must be signed in to re-normalize column positions." };
+  }
+
+  const { data: columns } = await supabase
+    .from("columns")
+    .select("id, position")
+    .eq("board_id", boardId)
+    .order("position", { ascending: true });
+
+  const positions = (columns ?? []).map((column) => column.position);
+  if (!detectPositionDrift(positions)) {
+    return {};
+  }
+
+  const normalized = renormalizePositions(columns ?? []);
+  const results = await Promise.all(
+    normalized.map(({ id, position }) =>
+      supabase.from("columns").update({ position }).eq("id", id),
+    ),
+  );
+
+  const failed = results.find((result) => result.error);
+  if (failed) {
+    return { error: failed.error?.message ?? "Failed to re-normalize columns." };
+  }
+
+  revalidatePath(`/boards/${boardId}`);
   return {};
 }
