@@ -109,7 +109,7 @@ export default async function BoardPage({
             <CreateColumnForm boardId={board.id} />
           </div>
 
-          <BoardView columns={columns} cards={cards} />
+          <BoardView boardId={board.id} columns={columns} cards={cards} />
         </div>
       </section>
     </main>

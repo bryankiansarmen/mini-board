@@ -34,13 +34,16 @@ import {
 } from "@/lib/cards/actions";
 import { computeCardMove } from "@/lib/cards/position";
 import { detectPositionDrift } from "@/lib/shared/normalize";
+import { useBoardRealtime } from "@/lib/realtime/useBoardRealtime";
 import { useBoardStore } from "@/lib/store/board";
 import type { ColumnRow, CardRow } from "@/types";
 
 export function BoardView({
+  boardId,
   columns: initialColumns,
   cards: initialCards,
 }: {
+  boardId: string;
   columns: ColumnRow[];
   cards: CardRow[];
 }) {
@@ -66,6 +69,7 @@ export function BoardView({
   const [cards, setCards] = useState(initialCards);
   const [prevCards, setPrevCards] = useState<CardRow[] | null>(null);
   const hydrateCards = useBoardStore((state) => state.hydrateCards);
+  const hydrateColumns = useBoardStore((state) => state.hydrateColumns);
   const moveCardOptimistic = useBoardStore((state) => state.moveCardOptimistic);
   const rollbackCards = useBoardStore((state) => state.rollbackCards);
 
@@ -81,6 +85,9 @@ export function BoardView({
   if (initialColumns !== prevInitial) {
     setPrevInitial(initialColumns);
     setColumns(initialColumns);
+    // Keep the store's columns slice in sync during the render-time resync so
+    // Realtime reconciliation always starts from the server's column set.
+    hydrateColumns(initialColumns);
   }
 
   // The card being dragged, for the DragOverlay ghost.
@@ -111,6 +118,18 @@ export function BoardView({
   }, {});
 
   const columnIds = columns.map((c) => c.id);
+
+  // Board-scoped Realtime subscription: reconciles cards/columns events into
+  // the store and mirrors the result into this local render state. The status
+  // is exposed as a data attribute (not visual UI — reconnection banner is a
+  // DESIGN_SYSTEM error state, deliberately silent here) so E2E tests can wait
+  // for a live subscription before asserting two-context sync.
+  const realtimeStatus = useBoardRealtime({
+    boardId,
+    columnIds,
+    onCardsChange: setCards,
+    onColumnsChange: setColumns,
+  });
 
   // distance: 5 keeps plain clicks and double-clicks working on the card and
   // column header (rename, delete) while still starting a drag once the
@@ -307,7 +326,10 @@ export function BoardView({
           items={columnIds}
           strategy={horizontalListSortingStrategy}
         >
-          <div className="flex items-start gap-4 overflow-x-auto pb-4">
+          <div
+            data-realtime={realtimeStatus}
+            className="flex items-start gap-4 overflow-x-auto pb-4"
+          >
             {columns.length === 0 && (
               <div className="flex h-64 w-full items-center justify-center rounded-lg border-2 border-dashed border-zinc-300 dark:border-zinc-700">
                 <p className="text-sm text-zinc-400 dark:text-zinc-500">
