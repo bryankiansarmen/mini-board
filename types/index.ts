@@ -65,3 +65,11 @@ export type ChecklistItemRow = {
   position: number;
   created_at: string;
 };
+
+export type CommentRow = {
+  id: string;
+  card_id: string;
+  author_id: string;
+  body: string;
+  created_at: string;
+};

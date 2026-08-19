@@ -1,5 +1,5 @@
 import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
-import type { CardRow, ChecklistItemRow, ColumnRow } from "@/types";
+import type { CardRow, ChecklistItemRow, ColumnRow, CommentRow } from "@/types";
 
 // Pure, framework-agnostic reconciliation helpers (mirrors
 // lib/shared/normalize.ts). They take a Realtime Postgres Changes payload and
@@ -74,4 +74,31 @@ export function reconcileChecklistItems(
     ? items.map((item) => (item.id === incoming.id ? incoming : item))
     : [...items, incoming];
   return sortChecklistItems(next);
+}
+
+function sortComments(comments: CommentRow[]): CommentRow[] {
+  return [...comments].sort((a, b) => {
+    if (a.created_at !== b.created_at) {
+      return a.created_at < b.created_at ? -1 : 1;
+    }
+    // Timestamps tie only at microsecond precision; id keeps the order stable.
+    return a.id < b.id ? -1 : 1;
+  });
+}
+
+export function reconcileComments(
+  comments: CommentRow[],
+  payload: RealtimePostgresChangesPayload<CommentRow>,
+): CommentRow[] {
+  if (payload.eventType === "DELETE") {
+    const id = payload.old?.id;
+    return id ? comments.filter((comment) => comment.id !== id) : comments;
+  }
+
+  const incoming = payload.new;
+  const exists = comments.some((comment) => comment.id === incoming.id);
+  const next = exists
+    ? comments.map((comment) => (comment.id === incoming.id ? incoming : comment))
+    : [...comments, incoming];
+  return sortComments(next);
 }

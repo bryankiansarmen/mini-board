@@ -50,6 +50,12 @@ async function addColumn(
   await expect(
     page.getByRole("heading", { level: 3, name: title }),
   ).toBeVisible();
+  // The column can render via the Realtime echo before the server action
+  // finishes. Wait for the form's pending state to settle (button back to
+  // "Create column") so the next addColumn doesn't click a disabled button.
+  await expect(
+    page.getByRole("button", { name: "Create column" }),
+  ).toBeEnabled();
 }
 
 test("column order persists exactly after creating three columns and reloading", async ({

@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import type {
   CardRow,
   ChecklistItemRow,
+  CommentRow,
   MemberListItem,
 } from "@/types";
 import { TitleField } from "@/components/board/card-detail/title-field";
@@ -12,6 +13,7 @@ import { DueDateField } from "@/components/board/card-detail/due-date-field";
 import { AssigneeField } from "@/components/board/card-detail/assignee-field";
 import { LabelsField } from "@/components/board/card-detail/labels-field";
 import { ChecklistField } from "@/components/board/card-detail/checklist-field";
+import { CommentsField } from "@/components/board/card-detail/comments-field";
 
 // Card detail modal: each field saves independently with its own inline
 // indicator, so an edit never blocks the rest of the modal. Rendered only
@@ -22,12 +24,16 @@ export function CardDetailModal({
   members,
   labelSuggestions,
   checklistItems,
+  comments,
+  currentUserId,
   onClose,
 }: {
   card: CardRow;
   members: MemberListItem[];
   labelSuggestions: string[];
   checklistItems: ChecklistItemRow[];
+  comments: CommentRow[];
+  currentUserId: string;
   onClose: () => void;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -70,6 +76,11 @@ export function CardDetailModal({
           </div>
           <LabelsField card={card} suggestions={labelSuggestions} />
           <ChecklistField cardId={card.id} items={checklistItems} />
+          <CommentsField
+            cardId={card.id}
+            comments={comments}
+            currentUserId={currentUserId}
+          />
         </div>
 
         <div className="mt-6 flex justify-end">

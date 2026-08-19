@@ -4,11 +4,13 @@ import {
   reconcileCardList,
   reconcileChecklistItems,
   reconcileColumnList,
+  reconcileComments,
 } from "@/lib/realtime/reconcile";
 import type {
   CardRow,
   ChecklistItemRow,
   ColumnRow,
+  CommentRow,
 } from "@/types";
 
 const card = (
@@ -100,6 +102,35 @@ function checklistPayload(
     old: eventType === "INSERT" ? {} : { id: row?.id ?? "" },
     errors: [],
   } as RealtimePostgresChangesPayload<ChecklistItemRow>;
+}
+
+const comment = (
+  id: string,
+  cardId: string,
+  createdAt = "2026-01-01T00:00:00.000Z",
+  body = `Comment ${id}`,
+  authorId = "author-1",
+): CommentRow => ({
+  id,
+  card_id: cardId,
+  author_id: authorId,
+  body,
+  created_at: createdAt,
+});
+
+function commentPayload(
+  eventType: "INSERT" | "UPDATE" | "DELETE",
+  row: CommentRow | null,
+): RealtimePostgresChangesPayload<CommentRow> {
+  return {
+    eventType,
+    schema: "public",
+    table: "comments",
+    commit_timestamp: "2026-01-01T00:00:00.000Z",
+    new: eventType === "DELETE" ? {} : row ?? {},
+    old: eventType === "INSERT" ? {} : { id: row?.id ?? "" },
+    errors: [],
+  } as RealtimePostgresChangesPayload<CommentRow>;
 }
 
 describe("reconcileCardList", () => {
@@ -216,6 +247,59 @@ describe("reconcileChecklistItems", () => {
     const next = reconcileChecklistItems(
       start,
       checklistPayload("DELETE", checklistItem("nope", "card-1", 0)),
+    );
+    expect(next).toEqual(start);
+  });
+});
+
+describe("reconcileComments", () => {
+  it("appends a comment it has never seen, sorted by created_at", () => {
+    const start = [
+      comment("a", "card-1", "2026-01-01T00:00:00.000Z"),
+      comment("b", "card-1", "2026-01-02T00:00:00.000Z"),
+    ];
+    const next = reconcileComments(
+      start,
+      commentPayload("INSERT", comment("c", "card-1", "2026-01-01T12:00:00.000Z")),
+    );
+    expect(next.map((item) => item.id)).toEqual(["a", "c", "b"]);
+  });
+
+  it("replaces an existing comment in place without duplicating it", () => {
+    const start = [
+      comment("a", "card-1", "2026-01-01T00:00:00.000Z", "First"),
+      comment("b", "card-1", "2026-01-02T00:00:00.000Z", "Second"),
+    ];
+    const next = reconcileComments(
+      start,
+      commentPayload(
+        "UPDATE",
+        comment("a", "card-1", "2026-01-01T00:00:00.000Z", "Edited"),
+      ),
+    );
+    expect(next).toHaveLength(2);
+    expect(next.find((item) => item.id === "a")).toMatchObject({
+      body: "Edited",
+    });
+  });
+
+  it("removes a comment on delete", () => {
+    const start = [
+      comment("a", "card-1"),
+      comment("b", "card-1"),
+    ];
+    const next = reconcileComments(
+      start,
+      commentPayload("DELETE", comment("a", "card-1")),
+    );
+    expect(next.map((item) => item.id)).toEqual(["b"]);
+  });
+
+  it("is a no-op when deleting an unknown id", () => {
+    const start = [comment("a", "card-1")];
+    const next = reconcileComments(
+      start,
+      commentPayload("DELETE", comment("nope", "card-1")),
     );
     expect(next).toEqual(start);
   });

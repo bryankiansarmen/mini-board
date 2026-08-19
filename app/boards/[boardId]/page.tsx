@@ -8,6 +8,7 @@ import type {
   ColumnRow,
   CardRow,
   ChecklistItemRow,
+  CommentRow,
   MemberListItem,
 } from "@/types";
 
@@ -112,6 +113,33 @@ export default async function BoardPage({
     return acc;
   }, {});
 
+  // Comments for the board's cards, grouped by card so the detail modal can
+  // look up a card's thread directly. Oldest-first so the thread reads
+  // top-to-bottom chronologically. Fetched only when the board has cards.
+  const comments = await (async () => {
+    if (cards.length === 0) return [] as CommentRow[];
+    const { data } = await supabase
+      .from("comments")
+      .select("*")
+      .in(
+        "card_id",
+        cards.map((card) => card.id),
+      )
+      .order("created_at", { ascending: true });
+    return (data ?? []) as CommentRow[];
+  })();
+
+  const commentsByCard = comments.reduce<Record<string, CommentRow[]>>(
+    (acc, comment) => {
+      if (!acc[comment.card_id]) {
+        acc[comment.card_id] = [];
+      }
+      acc[comment.card_id].push(comment);
+      return acc;
+    },
+    {},
+  );
+
   return (
     <main className="flex min-h-full flex-1 flex-col">
       <header className="border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
@@ -151,6 +179,8 @@ export default async function BoardPage({
             cards={cards}
             members={members}
             checklistItemsByCard={checklistItemsByCard}
+            commentsByCard={commentsByCard}
+            currentUserId={user.id}
           />
         </div>
       </section>
