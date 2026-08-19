@@ -56,3 +56,12 @@ export type CardRow = {
   created_at: string;
   updated_at: string;
 };
+
+export type ChecklistItemRow = {
+  id: string;
+  card_id: string;
+  content: string;
+  is_complete: boolean;
+  position: number;
+  created_at: string;
+};

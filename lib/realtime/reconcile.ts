@@ -1,5 +1,5 @@
 import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
-import type { CardRow, ColumnRow } from "@/types";
+import type { CardRow, ChecklistItemRow, ColumnRow } from "@/types";
 
 // Pure, framework-agnostic reconciliation helpers (mirrors
 // lib/shared/normalize.ts). They take a Realtime Postgres Changes payload and
@@ -15,6 +15,10 @@ function sortCards(cards: CardRow[]): CardRow[] {
     }
     return a.position - b.position;
   });
+}
+
+function sortChecklistItems(items: ChecklistItemRow[]): ChecklistItemRow[] {
+  return [...items].sort((a, b) => a.position - b.position);
 }
 
 function sortColumns(columns: ColumnRow[]): ColumnRow[] {
@@ -53,4 +57,21 @@ export function reconcileColumnList(
     ? columns.map((column) => (column.id === incoming.id ? incoming : column))
     : [...columns, incoming];
   return sortColumns(next);
+}
+
+export function reconcileChecklistItems(
+  items: ChecklistItemRow[],
+  payload: RealtimePostgresChangesPayload<ChecklistItemRow>,
+): ChecklistItemRow[] {
+  if (payload.eventType === "DELETE") {
+    const id = payload.old?.id;
+    return id ? items.filter((item) => item.id !== id) : items;
+  }
+
+  const incoming = payload.new;
+  const exists = items.some((item) => item.id === incoming.id);
+  const next = exists
+    ? items.map((item) => (item.id === incoming.id ? incoming : item))
+    : [...items, incoming];
+  return sortChecklistItems(next);
 }

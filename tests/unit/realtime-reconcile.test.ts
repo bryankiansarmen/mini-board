@@ -2,9 +2,14 @@ import { describe, expect, it } from "vitest";
 import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import {
   reconcileCardList,
+  reconcileChecklistItems,
   reconcileColumnList,
 } from "@/lib/realtime/reconcile";
-import type { CardRow, ColumnRow } from "@/types";
+import type {
+  CardRow,
+  ChecklistItemRow,
+  ColumnRow,
+} from "@/types";
 
 const card = (
   id: string,
@@ -65,6 +70,36 @@ function columnPayload(
     old: eventType === "INSERT" ? {} : { id: row?.id ?? "" },
     errors: [],
   } as RealtimePostgresChangesPayload<ColumnRow>;
+}
+
+const checklistItem = (
+  id: string,
+  cardId: string,
+  position: number,
+  content = `Item ${id}`,
+  isComplete = false,
+): ChecklistItemRow => ({
+  id,
+  card_id: cardId,
+  content,
+  is_complete: isComplete,
+  position,
+  created_at: "2026-01-01T00:00:00.000Z",
+});
+
+function checklistPayload(
+  eventType: "INSERT" | "UPDATE" | "DELETE",
+  row: ChecklistItemRow | null,
+): RealtimePostgresChangesPayload<ChecklistItemRow> {
+  return {
+    eventType,
+    schema: "public",
+    table: "checklist_items",
+    commit_timestamp: "2026-01-01T00:00:00.000Z",
+    new: eventType === "DELETE" ? {} : row ?? {},
+    old: eventType === "INSERT" ? {} : { id: row?.id ?? "" },
+    errors: [],
+  } as RealtimePostgresChangesPayload<ChecklistItemRow>;
 }
 
 describe("reconcileCardList", () => {
@@ -131,6 +166,57 @@ describe("reconcileColumnList", () => {
   it("returns the same content when a delete targets an unknown id", () => {
     const start = [column("a", "board-1", 0)];
     const next = reconcileColumnList(start, columnPayload("DELETE", column("nope", "board-1", 0)));
+    expect(next).toEqual(start);
+  });
+});
+
+describe("reconcileChecklistItems", () => {
+  it("appends an item it has never seen, sorted by position", () => {
+    const start = [checklistItem("a", "card-1", 0), checklistItem("b", "card-1", 1)];
+    const next = reconcileChecklistItems(
+      start,
+      checklistPayload("INSERT", checklistItem("c", "card-1", 1.5)),
+    );
+    expect(next.map((item) => item.id)).toEqual(["a", "b", "c"]);
+  });
+
+  it("updates an item in place without duplicating it", () => {
+    const start = [
+      checklistItem("a", "card-1", 0),
+      checklistItem("b", "card-1", 1),
+    ];
+    const next = reconcileChecklistItems(
+      start,
+      checklistPayload(
+        "UPDATE",
+        checklistItem("a", "card-1", 0, "Item A", true),
+      ),
+    );
+    expect(next).toHaveLength(2);
+    expect(next.find((item) => item.id === "a")).toMatchObject({
+      is_complete: true,
+      content: "Item A",
+    });
+  });
+
+  it("removes an item on delete", () => {
+    const start = [
+      checklistItem("a", "card-1", 0),
+      checklistItem("b", "card-1", 1),
+    ];
+    const next = reconcileChecklistItems(
+      start,
+      checklistPayload("DELETE", checklistItem("a", "card-1", 0)),
+    );
+    expect(next.map((item) => item.id)).toEqual(["b"]);
+  });
+
+  it("is a no-op when deleting an unknown id", () => {
+    const start = [checklistItem("a", "card-1", 0)];
+    const next = reconcileChecklistItems(
+      start,
+      checklistPayload("DELETE", checklistItem("nope", "card-1", 0)),
+    );
     expect(next).toEqual(start);
   });
 });

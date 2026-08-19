@@ -4,7 +4,12 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CreateColumnForm } from "@/components/board/create-column-form";
 import { BoardView } from "@/components/board/board-view";
-import type { ColumnRow, CardRow, MemberListItem } from "@/types";
+import type {
+  ColumnRow,
+  CardRow,
+  ChecklistItemRow,
+  MemberListItem,
+} from "@/types";
 
 export const metadata: Metadata = {
   title: "Board | MiniBoard",
@@ -81,6 +86,32 @@ export default async function BoardPage({
   const members = (membersResult.data ?? []) as MemberListItem[];
   const cards = (cardsResult.data ?? []) as CardRow[];
 
+  // Checklist items for the board's cards, grouped by card so the detail modal
+  // can look up a card's list directly. Fetched only when the board has cards
+  // (an empty `.in()` filter would be invalid).
+  const checklistItems = await (async () => {
+    if (cards.length === 0) return [] as ChecklistItemRow[];
+    const { data } = await supabase
+      .from("checklist_items")
+      .select("*")
+      .in(
+        "card_id",
+        cards.map((card) => card.id),
+      )
+      .order("position", { ascending: true });
+    return (data ?? []) as ChecklistItemRow[];
+  })();
+
+  const checklistItemsByCard = checklistItems.reduce<
+    Record<string, ChecklistItemRow[]>
+  >((acc, item) => {
+    if (!acc[item.card_id]) {
+      acc[item.card_id] = [];
+    }
+    acc[item.card_id].push(item);
+    return acc;
+  }, {});
+
   return (
     <main className="flex min-h-full flex-1 flex-col">
       <header className="border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
@@ -119,6 +150,7 @@ export default async function BoardPage({
             columns={columns}
             cards={cards}
             members={members}
+            checklistItemsByCard={checklistItemsByCard}
           />
         </div>
       </section>

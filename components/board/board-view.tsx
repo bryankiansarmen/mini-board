@@ -37,18 +37,20 @@ import { computeCardMove } from "@/lib/cards/position";
 import { detectPositionDrift } from "@/lib/shared/normalize";
 import { useBoardRealtime } from "@/lib/realtime/useBoardRealtime";
 import { useBoardStore } from "@/lib/store/board";
-import type { ColumnRow, CardRow, MemberListItem } from "@/types";
+import type { ColumnRow, CardRow, ChecklistItemRow, MemberListItem } from "@/types";
 
 export function BoardView({
   boardId,
   columns: initialColumns,
   cards: initialCards,
   members,
+  checklistItemsByCard,
 }: {
   boardId: string;
   columns: ColumnRow[];
   cards: CardRow[];
   members: MemberListItem[];
+  checklistItemsByCard: Record<string, ChecklistItemRow[]>;
 }) {
   const router = useRouter();
   // Local state for optimistic column reordering. The server render (from
@@ -409,6 +411,7 @@ export function BoardView({
           card={detailCard}
           members={members}
           labelSuggestions={labelSuggestions}
+          checklistItems={checklistItemsByCard[detailCard.id] ?? []}
           onClose={() => setDetailCardId(null)}
         />
       )}
