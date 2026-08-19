@@ -5,8 +5,9 @@ import {
   detectPositionDrift,
   renormalizePositions,
 } from "@/lib/shared/normalize";
+import { updateCardDetails } from "@/lib/cards/service";
 
-// Card CRUD is plain RLS-authorized Supabase CRUD — exercised through
+// Card CRUD is plain RLS-authorized Supabase CRUD, exercised through
 // user-scoped clients (anon key + the user's JWT), exactly like the server
 // actions. The negative tests (outsider) must fail at the database layer.
 
@@ -139,7 +140,7 @@ beforeAll(async () => {
   }
   columnId = column.id;
 
-  // A second column on the same board — used by the moveCard tests so the
+  // A second column on the same board, used by the moveCard tests so the
   // target column is always scoped to the same board (mirrors the guard in
   // the moveCard server action).
   const { data: column2, error: column2Error } = await service
@@ -434,6 +435,188 @@ describe("cards: position re-normalization", () => {
       .slice(1)
       .map((card, i) => card.position - (after ?? [])[i]!.position);
     expect(Math.min(...gaps)).toBeGreaterThan(0.0001);
+  });
+});
+
+describe("cards: detail fields", () => {
+  it("lets a member set and then clear the description", async () => {
+    const card = await createCard(memberClient, "Detail Desc", 70);
+
+    const set = await updateCardDetails(memberClient, {
+      cardId: card.id,
+      updates: { description: "  Build the thing  " },
+    });
+    expect(set.ok).toBe(true);
+
+    const { data: withDesc } = await service
+      .from("cards")
+      .select("description")
+      .eq("id", card.id)
+      .maybeSingle();
+    expect(withDesc?.description).toBe("Build the thing");
+
+    const clear = await updateCardDetails(memberClient, {
+      cardId: card.id,
+      updates: { description: null },
+    });
+    expect(clear.ok).toBe(true);
+
+    const { data: cleared } = await service
+      .from("cards")
+      .select("description")
+      .eq("id", card.id)
+      .maybeSingle();
+    expect(cleared?.description).toBeNull();
+  });
+
+  it("lets a member set and clear the due date and rejects an invalid one", async () => {
+    const card = await createCard(memberClient, "Detail Due", 71);
+
+    const set = await updateCardDetails(memberClient, {
+      cardId: card.id,
+      updates: { due_date: "2026-09-30" },
+    });
+    expect(set.ok).toBe(true);
+
+    const { data: withDue } = await service
+      .from("cards")
+      .select("due_date")
+      .eq("id", card.id)
+      .maybeSingle();
+    expect(withDue?.due_date).toBe("2026-09-30");
+
+    const invalid = await updateCardDetails(memberClient, {
+      cardId: card.id,
+      updates: { due_date: "2026-13-45" },
+    });
+    expect(invalid.ok).toBe(false);
+    if (!invalid.ok) {
+      expect(invalid.error).toBe("Due date must be a valid date.");
+    }
+
+    const clear = await updateCardDetails(memberClient, {
+      cardId: card.id,
+      updates: { due_date: null },
+    });
+    expect(clear.ok).toBe(true);
+
+    const { data: cleared } = await service
+      .from("cards")
+      .select("due_date")
+      .eq("id", card.id)
+      .maybeSingle();
+    expect(cleared?.due_date).toBeNull();
+  });
+
+  it("lets a member assign a workspace member and unassign them", async () => {
+    const card = await createCard(memberClient, "Detail Assign", 72);
+
+    const assign = await updateCardDetails(memberClient, {
+      cardId: card.id,
+      updates: { assignee_id: memberId },
+    });
+    expect(assign.ok).toBe(true);
+
+    const { data: withAssignee } = await service
+      .from("cards")
+      .select("assignee_id")
+      .eq("id", card.id)
+      .maybeSingle();
+    expect(withAssignee?.assignee_id).toBe(memberId);
+
+    const unassign = await updateCardDetails(memberClient, {
+      cardId: card.id,
+      updates: { assignee_id: null },
+    });
+    expect(unassign.ok).toBe(true);
+
+    const { data: unassigned } = await service
+      .from("cards")
+      .select("assignee_id")
+      .eq("id", card.id)
+      .maybeSingle();
+    expect(unassigned?.assignee_id).toBeNull();
+  });
+
+  it("rejects assigning a user who is not a workspace member", async () => {
+    const card = await createCard(memberClient, "Detail Bad Assign", 73);
+
+    const result = await updateCardDetails(memberClient, {
+      cardId: card.id,
+      updates: { assignee_id: outsiderId },
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toBe("Assignee must be a member of this workspace.");
+    }
+
+    const { data: unchanged } = await service
+      .from("cards")
+      .select("assignee_id")
+      .eq("id", card.id)
+      .maybeSingle();
+    expect(unchanged?.assignee_id).toBeNull();
+  });
+
+  it("normalizes labels: trims, drops empties, dedupes case-insensitively", async () => {
+    const card = await createCard(memberClient, "Detail Labels", 74);
+
+    const result = await updateCardDetails(memberClient, {
+      cardId: card.id,
+      updates: {
+        labels: ["  Frontend  ", "frontend", "", "  ", "Bug", "BUG"],
+      },
+    });
+    expect(result.ok).toBe(true);
+
+    const { data: withLabels } = await service
+      .from("cards")
+      .select("labels")
+      .eq("id", card.id)
+      .maybeSingle();
+    expect(withLabels?.labels).toEqual(["Frontend", "Bug"]);
+  });
+
+  it("rejects a blank title", async () => {
+    const card = await createCard(memberClient, "Detail Title", 75);
+
+    const result = await updateCardDetails(memberClient, {
+      cardId: card.id,
+      updates: { title: "   " },
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toBe("Card title is required.");
+    }
+
+    const { data: unchanged } = await service
+      .from("cards")
+      .select("title")
+      .eq("id", card.id)
+      .maybeSingle();
+    expect(unchanged?.title).toBe("Detail Title");
+  });
+
+  it("denies a non-member from updating card details (RLS negative test)", async () => {
+    const card = await createCard(ownerClient, "Detail Secure", 76);
+
+    const result = await updateCardDetails(outsiderClient, {
+      cardId: card.id,
+      updates: { description: "Hacked" },
+    });
+    // RLS filters the card read to zero rows, so the outsider can never reach
+    // the workspace membership check.
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toBe("Card not found.");
+    }
+
+    const { data: stillThere } = await service
+      .from("cards")
+      .select("description")
+      .eq("id", card.id)
+      .maybeSingle();
+    expect(stillThere?.description).toBeNull();
   });
 });
 

@@ -68,7 +68,7 @@ test("owner can create, rename, and delete a board", async ({ browser }) => {
   await createWorkspace(page, workspaceName);
   await openBoardsPage(page, workspaceName);
 
-  // Create a board — it appears in the grid.
+  // Create a board; it appears in the grid.
   await page.getByLabel("Board title").fill("Sprint 24");
   await page.getByRole("button", { name: "Create board" }).click();
   await expect(page.getByText("Sprint 24")).toBeVisible();

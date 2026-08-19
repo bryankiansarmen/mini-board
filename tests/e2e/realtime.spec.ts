@@ -213,7 +213,7 @@ test("card moved in context A appears moved in context B with no duplication or 
   await expect(await columnCardTitles(owner, "Done")).toHaveText(["Sync Me"]);
   await expect(await columnCardTitles(owner, "To Do")).toHaveText([]);
 
-  // THE DoD assertion: context B sees the moved card within a bounded wait —
+  // THE DoD assertion: context B sees the moved card within a bounded wait;
   // no duplication, no loss. This is the project's most important test.
   await expect(await columnCardTitles(member, "Done")).toHaveText(["Sync Me"], {
     timeout: 15_000,
@@ -248,7 +248,7 @@ test("concurrent drags of the same card converge to a single consistent state in
 
   // Drag the same card in both contexts within the same second, to different
   // columns. The last committed write wins; both clients must converge on the
-  // same final position — never two different positions, never a duplicate.
+  // same final position, never two different positions, never a duplicate.
   const ownerMove = waitForMoveResponse(owner);
   const memberMove = waitForMoveResponse(member);
 

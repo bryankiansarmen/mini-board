@@ -82,7 +82,7 @@ test("column order persists exactly after creating three columns and reloading",
   const headings = page.getByRole("heading", { level: 3 });
   await expect(headings).toHaveText(["To Do", "Doing", "Done"]);
 
-  // Hard reload — order must persist exactly.
+  // Hard reload; order must persist exactly.
   await page.reload();
   await expect(
     page.getByRole("button", { name: "Create column" }),
@@ -117,7 +117,7 @@ test("column can be dragged to reorder and the order survives a reload", async (
   await addColumn(page, "Doing");
   await addColumn(page, "Done");
 
-  // Drag "Doing" onto "To Do" — it should move to the front.
+  // Drag "Doing" onto "To Do"; it should move to the front.
   // Explicit mouse gestures rather than dragTo so dnd-kit's PointerSensor
   // sees the intermediate pointermove steps.
   const doing = page.getByRole("heading", { level: 3, name: "Doing" });

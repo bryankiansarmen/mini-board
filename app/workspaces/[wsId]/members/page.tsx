@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { MemberList, type MemberListItem } from "@/components/workspace/member-list";
+import { MemberList } from "@/components/workspace/member-list";
+import type { MemberListItem } from "@/types";
 
 export const metadata: Metadata = {
   title: "Members | MiniBoard",

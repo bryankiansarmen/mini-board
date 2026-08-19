@@ -16,13 +16,12 @@ export type RealtimeStatus =
   | "CHANNEL_ERROR"
   | "TIMED_OUT";
 
-// Board-scoped Realtime subscription (ARCHITECTURE.md: one Postgres Changes
-// channel per board, not per row). Subscribes to `columns` filtered by
-// `board_id` and to `cards` filtered by `column_id=in.(...)`, then reconciles
-// each event into the Zustand store via getState()/setState — never through a
-// selector, so no component re-renders during the store write (the Session 17
-// constraint). The store owns the reconciled list; the callbacks mirror it into
-// the board view's local render state.
+// Board-scoped Realtime subscription: one Postgres Changes channel per board,
+// not per row. Subscribes to `columns` filtered by `board_id` and to `cards`
+// filtered by `column_id=in.(...)`, then reconciles each event into the
+// Zustand store via getState()/setState, never through a selector, so no
+// component re-renders during the store write. The store owns the reconciled
+// list; the callbacks mirror it into the board view's local render state.
 export function useBoardRealtime({
   boardId,
   columnIds,
@@ -91,7 +90,7 @@ export function useBoardRealtime({
         );
 
       // Cards are scoped by their column ids (they have no board_id column).
-      // Skip the cards subscription entirely when the board has no columns —
+      // Skip the cards subscription entirely when the board has no columns;
       // `column_id=in.()` with zero ids is an invalid Realtime filter.
       if (columnKey) {
         channel.on(

@@ -53,7 +53,7 @@ describe("renormalizePositions", () => {
       item("y", 1),
       item("z", 1),
     ];
-    // Ties keep their input order — re-normalization never reorders items.
+    // Ties keep their input order; re-normalization never reorders items.
     expect(renormalizePositions(items).map(({ id }) => id)).toEqual([
       "x",
       "y",
@@ -74,7 +74,7 @@ describe("renormalizePositions", () => {
 describe("DoD: 25 cards inserted between the same two neighbors", () => {
   it("triggers re-normalization without changing relative order", () => {
     // Anchor the two neighbors, then repeatedly drop cards at the midpoint
-    // between the anchor and the most recently inserted card — exactly how
+    // between the anchor and the most recently inserted card, exactly how
     // repeated drag/drop between the same two neighbors behaves. Each insert
     // halves the remaining gap; after a handful the gap falls below threshold.
     const neighbors = [item("first", 0), item("last", 1)];

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   DndContext,
@@ -22,6 +22,7 @@ import {
 } from "@dnd-kit/sortable";
 import { Column } from "@/components/board/column";
 import { DeleteColumnModal } from "@/components/board/delete-column-modal";
+import { CardDetailModal } from "@/components/board/card-detail-modal";
 import {
   deleteColumn,
   renormalizeColumnPositions,
@@ -36,21 +37,23 @@ import { computeCardMove } from "@/lib/cards/position";
 import { detectPositionDrift } from "@/lib/shared/normalize";
 import { useBoardRealtime } from "@/lib/realtime/useBoardRealtime";
 import { useBoardStore } from "@/lib/store/board";
-import type { ColumnRow, CardRow } from "@/types";
+import type { ColumnRow, CardRow, MemberListItem } from "@/types";
 
 export function BoardView({
   boardId,
   columns: initialColumns,
   cards: initialCards,
+  members,
 }: {
   boardId: string;
   columns: ColumnRow[];
   cards: CardRow[];
+  members: MemberListItem[];
 }) {
   const router = useRouter();
   // Local state for optimistic column reordering. The server render (from
   // props) is the source of truth after any mutation, so when the props
-  // change we resync during render (the React-recommended pattern — no effect).
+  // change we resync during render (the React-recommended pattern, no effect).
   const [columns, setColumns] = useState(initialColumns);
   const [prevInitial, setPrevInitial] = useState(initialColumns);
   const [pendingDelete, setPendingDelete] = useState<ColumnRow | null>(null);
@@ -58,7 +61,7 @@ export function BoardView({
   const [isDeleting, startDelete] = useTransition();
 
   // Cards are render state initialized from the server props and resynced
-  // during render — the same sanctioned pattern as columns above — so the
+  // during render, the same sanctioned pattern as columns above, so the
   // first paint (including the server-rendered HTML) always shows the board's
   // cards. The Zustand store stays as the optimistic-move engine only: the
   // render path does NOT subscribe to its cards slice, because a render-phase
@@ -93,6 +96,26 @@ export function BoardView({
   // The card being dragged, for the DragOverlay ghost.
   const [activeCard, setActiveCard] = useState<CardRow | null>(null);
 
+  // The card whose detail modal is open. Rendered conditionally, so the modal
+  // remounts on every open and shows fresh server props. If the card is
+  // deleted (locally or via Realtime), detailCard becomes null and it closes.
+  const [detailCardId, setDetailCardId] = useState<string | null>(null);
+  const detailCard = detailCardId
+    ? (cards.find((card) => card.id === detailCardId) ?? null)
+    : null;
+
+  // Existing labels across the board, used as suggestions when adding a new
+  // label in the card detail modal.
+  const labelSuggestions = useMemo(() => {
+    const seen = new Set<string>();
+    for (const card of cards) {
+      for (const label of card.labels) {
+        seen.add(label);
+      }
+    }
+    return [...seen].sort();
+  }, [cards]);
+
   // Non-blocking error toast for rollback-on-failed-write.
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -121,8 +144,8 @@ export function BoardView({
 
   // Board-scoped Realtime subscription: reconciles cards/columns events into
   // the store and mirrors the result into this local render state. The status
-  // is exposed as a data attribute (not visual UI — reconnection banner is a
-  // DESIGN_SYSTEM error state, deliberately silent here) so E2E tests can wait
+  // is exposed as a data attribute (not visual UI; the reconnection banner is
+  // an error state, deliberately silent here) so E2E tests can wait
   // for a live subscription before asserting two-context sync.
   const realtimeStatus = useBoardRealtime({
     boardId,
@@ -134,7 +157,7 @@ export function BoardView({
   // distance: 5 keeps plain clicks and double-clicks working on the card and
   // column header (rename, delete) while still starting a drag once the
   // pointer actually moves. TouchSensor uses a 250ms long-press so dragging
-  // doesn't fight vertical scroll on mobile (DESIGN_SYSTEM breakpoint note).
+  // doesn't fight vertical scroll on mobile (the design breakpoint note).
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(TouchSensor, {
@@ -203,7 +226,7 @@ export function BoardView({
       overCardId,
     );
 
-    // No-op drop (card didn't change position) — nothing to write.
+    // No-op drop (card didn't change position), nothing to write.
     if (!move) return;
 
     const previous = cards;
@@ -227,7 +250,7 @@ export function BoardView({
 
     if (result.error) {
       // Roll back to the last known-good position and surface a non-blocking
-      // error toast — never a silent failure.
+      // error toast, never a silent failure.
       rollbackCards(previous);
       setCards(previous);
       showToast(`Couldn't move card: ${result.error}`);
@@ -342,7 +365,9 @@ export function BoardView({
                 key={column.id}
                 column={column}
                 cards={cardsByColumn[column.id] ?? []}
+                members={members}
                 onRequestDelete={() => setPendingDelete(column)}
+                onOpenDetail={setDetailCardId}
               />
             ))}
           </div>
@@ -378,6 +403,15 @@ export function BoardView({
         onCancel={() => setPendingDelete(null)}
         onConfirm={confirmDelete}
       />
+
+      {detailCard && (
+        <CardDetailModal
+          card={detailCard}
+          members={members}
+          labelSuggestions={labelSuggestions}
+          onClose={() => setDetailCardId(null)}
+        />
+      )}
     </>
   );
 }

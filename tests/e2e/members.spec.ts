@@ -113,7 +113,7 @@ test("a plain member sees the member list but no remove/promote actions", async 
 
   await joinWorkspace(pageB, emailB, workspaceName, code!);
 
-  // B is a plain member — the members page shows both rows but no actions.
+  // B is a plain member; the members page shows both rows but no actions.
   await openMembersPage(pageB, workspaceName);
   await expect(pageB.getByText(emailA)).toBeVisible();
   await expect(pageB.getByText(emailB)).toBeVisible();

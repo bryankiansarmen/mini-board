@@ -13,7 +13,7 @@ create table boards (
 create index idx_boards_workspace on boards(workspace_id, position);
 
 -- Grant Data API access (new entities are NOT auto-exposed when
--- api.auto_expose_new_tables is unset — see workspaces migration).
+-- api.auto_expose_new_tables is unset; see the workspaces migration).
 grant select, insert, update, delete on boards to anon, authenticated, service_role;
 
 -- RLS

@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-// Board CRUD is plain RLS-authorized Supabase CRUD — there is no service-layer
+// Board CRUD is plain RLS-authorized Supabase CRUD; there is no service-layer
 // function to call. So these tests exercise RLS directly through a
 // user-scoped client (anon key + the user's JWT), which is what the server
 // actions use. That is the only way the "member cannot delete a board"

@@ -213,7 +213,7 @@ test("a failed card move rolls back and shows a toast", async ({
 
   // Make the moveCard server action (a POST carrying the Next-Action header to
   // the board URL) fail. The optimistic update must roll back and a toast must
-  // appear — never a silent failure.
+  // appear, never a silent failure.
   await page.route(/\/boards\/.+/, async (route) => {
     const request = route.request();
     if (request.method() === "POST" && request.headers()["next-action"]) {
@@ -318,7 +318,7 @@ test("card order persists exactly after creating three cards and reloading", asy
   await addCard(page, "Card Two");
   await addCard(page, "Card Three");
 
-  // Hard reload — order must persist exactly (validates position handling).
+  // Hard reload; order must persist exactly (validates position handling).
   await page.reload();
   await expect(
     page.getByRole("button", { name: "Create column" }),
@@ -326,6 +326,161 @@ test("card order persists exactly after creating three cards and reloading", asy
 
   const cardList = page.locator('div[class*="space-y-2"] p.text-sm');
   await expect(cardList).toHaveText(["Card One", "Card Two", "Card Three"]);
+
+  await context.close();
+});
+
+test("card detail modal opens on a single click and closes via Escape, backdrop, and Close", async ({
+  browser,
+}) => {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+
+  const stamp = Date.now();
+  const workspaceName = `Cards WS ${stamp}`;
+  const boardTitle = `Cards Board ${stamp}`;
+  const email = `e2e-cards-modal-${stamp}@example.com`;
+
+  await signUp(page, email);
+  await createWorkspace(page, workspaceName);
+  await openBoardsPage(page, workspaceName);
+
+  await page.getByLabel("Board title").fill(boardTitle);
+  await page.getByRole("button", { name: "Create board" }).click();
+  await expect(page.getByText(boardTitle)).toBeVisible();
+
+  await openBoard(page, boardTitle);
+  await addColumn(page, "To Do");
+  await addCard(page, "Modal Card");
+
+  const dialog = page.getByRole("dialog", { name: "Card details" });
+
+  // A single click opens the detail modal (delayed 250ms to distinguish a
+  // single click from a double-click rename).
+  await page.getByText("Modal Card", { exact: true }).click();
+  await expect(dialog).toBeVisible();
+  await expect(
+    dialog.getByLabel("Card title").first(),
+  ).toHaveValue("Modal Card");
+  await expect(
+    dialog.getByRole("button", { name: "Add a description…" }),
+  ).toBeVisible();
+  await expect(
+    dialog.getByRole("button", { name: "Set due date" }),
+  ).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Assign" })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "+ Label" })).toBeVisible();
+
+  // Escape closes.
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+
+  // Backdrop click closes.
+  await page.getByText("Modal Card", { exact: true }).click();
+  await expect(dialog).toBeVisible();
+  await page.mouse.click(10, 10);
+  await expect(dialog).toHaveCount(0);
+
+  // Close button closes.
+  await page.getByText("Modal Card", { exact: true }).click();
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: "Close" }).click();
+  await expect(dialog).toHaveCount(0);
+
+  await context.close();
+});
+
+test("card detail fields save independently and persist after a reload", async ({
+  browser,
+}) => {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+
+  const stamp = Date.now();
+  const workspaceName = `Cards WS ${stamp}`;
+  const boardTitle = `Cards Board ${stamp}`;
+  const email = `e2e-cards-details-${stamp}@example.com`;
+
+  await signUp(page, email);
+  await createWorkspace(page, workspaceName);
+  await openBoardsPage(page, workspaceName);
+
+  await page.getByLabel("Board title").fill(boardTitle);
+  await page.getByRole("button", { name: "Create board" }).click();
+  await expect(page.getByText(boardTitle)).toBeVisible();
+
+  await openBoard(page, boardTitle);
+  await addColumn(page, "To Do");
+  await addCard(page, "Edit Me");
+
+  const dialog = page.getByRole("dialog", { name: "Card details" });
+
+  await page.getByText("Edit Me", { exact: true }).click();
+  await expect(dialog).toBeVisible();
+
+  // Description: the dashed "Add a description…" button becomes a textarea;
+  // blurring saves. The display text only reappears after the save commits.
+  await dialog.getByRole("button", { name: "Add a description…" }).click();
+  const descriptionInput = dialog.getByLabel("Card description");
+  await descriptionInput.fill("Build the thing");
+  await descriptionInput.press("Tab");
+  await expect(
+    dialog.getByRole("button", { name: "Build the thing" }),
+  ).toBeVisible();
+
+  // Due date: a future date in the current year (formatDueDate drops the year
+  // for current-year dates, and avoiding an overdue date skips the amber chip).
+  // Blur via a click on the title input: Tab on a native date input cycles its
+  // internal segments in Chromium before leaving the control, so blur is not
+  // deterministic under Playwright.
+  await dialog.getByRole("button", { name: "Set due date" }).click();
+  const dueDateInput = dialog.getByLabel("Due date");
+  await dueDateInput.fill("2026-12-15");
+  await dialog.getByLabel("Card title").first().click();
+  await expect(
+    dialog.getByRole("button", { name: "Dec 15" }),
+  ).toBeVisible();
+
+  // Label: add via the "+ Label" input; Enter adds and saves.
+  await dialog.getByRole("button", { name: "+ Label" }).click();
+  const labelInput = dialog.getByLabel("Add label");
+  await labelInput.fill("frontend");
+  await labelInput.press("Enter");
+  await expect(dialog.getByText("frontend", { exact: true })).toBeVisible();
+
+  // Assignee: the owner is a workspace member and appears in the picker.
+  await dialog.getByRole("button", { name: "Assign" }).click();
+  await dialog.getByLabel("Assignee").selectOption(email);
+  await expect(dialog.getByText(email, { exact: true })).toBeVisible();
+
+  await dialog.getByRole("button", { name: "Close" }).click();
+  await expect(dialog).toHaveCount(0);
+
+  // The card list shows the metadata.
+  await expect(page.getByText("frontend", { exact: true })).toBeVisible();
+  await expect(page.getByText("Dec 15", { exact: true })).toBeVisible();
+  await expect(page.getByTitle(email)).toBeVisible();
+
+  // Everything survives a hard reload.
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "Create column" }),
+  ).toBeVisible();
+  await expect(page.getByText("frontend", { exact: true })).toBeVisible();
+  await expect(page.getByText("Dec 15", { exact: true })).toBeVisible();
+  await expect(page.getByTitle(email)).toBeVisible();
+
+  // Reopen and confirm every field still holds its value.
+  await page.getByText("Edit Me", { exact: true }).click();
+  await expect(dialog).toBeVisible();
+  await expect(
+    dialog.getByRole("button", { name: "Build the thing" }),
+  ).toBeVisible();
+  await expect(
+    dialog.getByRole("button", { name: "Dec 15" }),
+  ).toBeVisible();
+  await expect(dialog.getByText("frontend", { exact: true })).toBeVisible();
+  await expect(dialog.getByText(email, { exact: true })).toBeVisible();
 
   await context.close();
 });
@@ -361,7 +516,7 @@ test("a plain member sees cards in a shared board, a non-member does not", async
   await addColumn(pageA, "To Do");
   await addCard(pageA, "Shared Card");
 
-  // Non-member C — a completely unrelated user — never reaches the board:
+  // Non-member C, a completely unrelated user, never reaches the board:
   // the board page 404s because RLS returns no board row for them.
   await signUp(pageC, emailC);
   await pageC.goto(pageA.url());

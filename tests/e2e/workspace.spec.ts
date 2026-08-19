@@ -46,7 +46,7 @@ test("RLS negative: a second user cannot see the first user's workspace", async 
 
   await signUp(pageB, emailB);
 
-  // A brand-new, unrelated user must not see the workspace A created — this
+  // A brand-new, unrelated user must not see the workspace A created; this
   // asserts the RLS SELECT policy is actually filtering (a UI-layer hide would
   // still show the empty-state message the same way, so also verify no link).
   await expect(

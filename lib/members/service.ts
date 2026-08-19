@@ -96,7 +96,7 @@ export async function removeMember(
 // Changes a member's role between admin and member. The caller must be an
 // Owner or Admin. The workspace Owner's real authority comes from the
 // owner_id check inside is_workspace_admin, so editing the Owner's stored
-// role never actually demotes them — it is permitted rather than special-cased.
+// role never actually demotes them; it is permitted rather than special-cased.
 export async function changeMemberRole(
   service: SupabaseClient,
   input: {

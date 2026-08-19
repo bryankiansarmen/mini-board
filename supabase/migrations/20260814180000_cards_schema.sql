@@ -1,7 +1,7 @@
 -- cards table + RLS policies, index, and grants.
 -- Only the table this task needs, mirroring columns_schema.sql.
--- description / due_date / assignee_id / labels exist per
--- but are only surfaced in the UI from E5 (card detail modal).
+-- description / due_date / assignee_id / labels exist on the table but are
+-- only surfaced in the UI from the card detail modal.
 
 -- Cards
 create table cards (
@@ -20,7 +20,7 @@ create table cards (
 create index idx_cards_column on cards(column_id, position);
 
 -- Grant Data API access (new entities are NOT auto-exposed when
--- api.auto_expose_new_tables is unset — see workspaces migration).
+-- api.auto_expose_new_tables is unset; see the workspaces migration).
 grant select, insert, update, delete on cards to anon, authenticated, service_role;
 
 -- RLS

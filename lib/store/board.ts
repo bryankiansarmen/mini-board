@@ -6,12 +6,12 @@ import {
   reconcileColumnList,
 } from "@/lib/realtime/reconcile";
 
-// Board card + column state. Framework-agnostic (no React imports — see
-// eslint.config.mjs). Holds the flat lists for the current board so drag-and-drop
-// can apply optimistic updates immediately and roll back on a failed DB write,
-// and so Realtime events can be reconciled in place. Server props are the source
-// of truth after any mutation; the board view hydrates this store during render
-// whenever the props change.
+// Board card + column state, framework-agnostic with no React imports (a lint
+// rule enforces this). Holds the flat lists for the current board so
+// drag-and-drop can apply optimistic updates immediately and roll back on a
+// failed DB write, and so Realtime events can be reconciled in place. Server
+// props are the source of truth after any mutation; the board view hydrates
+// this store during render whenever the props change.
 type BoardCardsState = {
   cards: CardRow[];
   columns: ColumnRow[];

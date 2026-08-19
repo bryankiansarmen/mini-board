@@ -127,7 +127,7 @@ export async function acceptInviteCode(
 
   if (memberError) {
     if (memberError.code === PG_UNIQUE_VIOLATION) {
-      // Raced with another concurrent accept — treat as already-a-member.
+      // Raced with another concurrent accept; treat as already-a-member.
       return {
         ok: false,
         status: 409,

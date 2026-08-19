@@ -2,13 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import type { MemberListItem } from "@/types";
 
-export type MemberListItem = {
-  user_id: string;
-  email: string | null;
-  role: "admin" | "member";
-  joined_at: string;
-};
+export type { MemberListItem };
 
 export function MemberList({
   workspaceId,

@@ -23,10 +23,10 @@ export function calculateCardPosition(
 }
 
 // Computes the target column + position for a card drop.
-//   cards         — every card currently on the board
-//   activeCardId  — the card being dragged
-//   targetColumnId — the column the drag ended over
-//   overCardId    — the card the drag ended over, or null if over empty space
+//   cards          - every card currently on the board
+//   activeCardId   - the card being dragged
+//   targetColumnId - the column the drag ended over
+//   overCardId     - the card the drag ended over, or null if over empty space
 // Returns null when the drop leaves the order unchanged (no DB write needed).
 export function computeCardMove(
   cards: CardRow[],

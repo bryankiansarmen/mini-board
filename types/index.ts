@@ -12,6 +12,13 @@ export type WorkspaceMemberRow = {
   joined_at: string;
 };
 
+export type MemberListItem = {
+  user_id: string;
+  email: string | null;
+  role: "admin" | "member";
+  joined_at: string;
+};
+
 export type WorkspaceInviteCodeRow = {
   id: string;
   workspace_id: string;

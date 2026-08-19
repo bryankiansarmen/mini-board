@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-// Column CRUD is plain RLS-authorized Supabase CRUD — exercised through
+// Column CRUD is plain RLS-authorized Supabase CRUD, exercised through
 // user-scoped clients (anon key + the user's JWT), exactly like the server
 // actions. The negative tests (outsider) must fail at the database layer.
 

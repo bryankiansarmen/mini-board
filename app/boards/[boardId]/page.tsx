@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CreateColumnForm } from "@/components/board/create-column-form";
 import { BoardView } from "@/components/board/board-view";
-import type { ColumnRow, CardRow } from "@/types";
+import type { ColumnRow, CardRow, MemberListItem } from "@/types";
 
 export const metadata: Metadata = {
   title: "Board | MiniBoard",
@@ -48,23 +48,20 @@ export default async function BoardPage({
     notFound();
   }
 
-  const { data: workspace } = await supabase
-    .from("workspaces")
-    .select("id, name")
-    .eq("id", board.workspace_id)
-    .maybeSingle();
-
-  if (!workspace) {
-    notFound();
-  }
-
   const columns = (columnsResult.data ?? []) as ColumnRow[];
 
-  // Fetch cards for all columns in one query (avoids an N+1 per column).
-  // RLS scopes rows to boards the caller is a member of.
-  const { data: cardsData } =
+  // Fetch the workspace, the workspace's members (for the assignee picker),
+  // and all cards in one parallel batch once the board is known. RLS scopes
+  // every row to boards the caller is a member of.
+  const [workspaceResult, membersResult, cardsResult] = await Promise.all([
+    supabase
+      .from("workspaces")
+      .select("id, name")
+      .eq("id", board.workspace_id)
+      .maybeSingle(),
+    supabase.rpc("get_workspace_member_emails", { ws_id: board.workspace_id }),
     columns.length > 0
-      ? await supabase
+      ? supabase
           .from("cards")
           .select("*")
           .in(
@@ -72,9 +69,17 @@ export default async function BoardPage({
             columns.map((column) => column.id),
           )
           .order("position", { ascending: true })
-      : { data: [] };
+      : Promise.resolve({ data: [] }),
+  ]);
 
-  const cards = (cardsData ?? []) as CardRow[];
+  const workspace = workspaceResult.data;
+
+  if (!workspace) {
+    notFound();
+  }
+
+  const members = (membersResult.data ?? []) as MemberListItem[];
+  const cards = (cardsResult.data ?? []) as CardRow[];
 
   return (
     <main className="flex min-h-full flex-1 flex-col">
@@ -109,7 +114,12 @@ export default async function BoardPage({
             <CreateColumnForm boardId={board.id} />
           </div>
 
-          <BoardView boardId={board.id} columns={columns} cards={cards} />
+          <BoardView
+            boardId={board.id}
+            columns={columns}
+            cards={cards}
+            members={members}
+          />
         </div>
       </section>
     </main>

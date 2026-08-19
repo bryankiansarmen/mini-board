@@ -5,8 +5,8 @@ import type { CardRow, ColumnRow } from "@/types";
 // lib/shared/normalize.ts). They take a Realtime Postgres Changes payload and
 // return a NEW list; the caller (the store / hook) owns committing the result.
 // Server data is the source of truth: an INSERT/UPDATE replaces or appends the
-// row by id, a DELETE drops it. No client-side conflict resolution — the last
-// committed write wins (matches ARCHITECTURE.md's sequence diagram).
+// row by id, a DELETE drops it. No client-side conflict resolution, so the last
+// committed write wins.
 
 function sortCards(cards: CardRow[]): CardRow[] {
   return [...cards].sort((a, b) => {

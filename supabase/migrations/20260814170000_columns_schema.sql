@@ -13,7 +13,7 @@ create table columns (
 create index idx_columns_board on columns(board_id, position);
 
 -- Grant Data API access (new entities are NOT auto-exposed when
--- api.auto_expose_new_tables is unset — see workspaces migration).
+-- api.auto_expose_new_tables is unset; see the workspaces migration).
 grant select, insert, update, delete on columns to anon, authenticated, service_role;
 
 -- RLS

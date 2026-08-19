@@ -45,7 +45,7 @@ test("invite flow: owner generates a code and a second user joins the workspace"
   // The join form refreshes the workspace list, which now shows the workspace.
   await expect(pageB.getByText(workspaceName)).toBeVisible();
 
-  // B can open it — membership is real, not just a visible row.
+  // B can open it; membership is real, not just a visible row.
   await pageB.getByRole("link", { name: new RegExp(workspaceName) }).click();
   await expect(pageB).toHaveURL(/\/workspaces\/.+\/boards/);
 

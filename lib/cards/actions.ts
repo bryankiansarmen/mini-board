@@ -6,12 +6,16 @@ import {
   detectPositionDrift,
   renormalizePositions,
 } from "@/lib/shared/normalize";
+import {
+  updateCardDetails as updateCardDetailsService,
+  type CardDetailUpdates,
+} from "@/lib/cards/service";
 
 export type CardFormState = {
   error?: string;
 };
 
-// Card CRUD is plain RLS-authorized Supabase CRUD — no service-role, no
+// Card CRUD is plain RLS-authorized Supabase CRUD; no service-role, no
 // Route Handler. RLS scopes every operation through columns -> boards ->
 // workspace membership: any workspace member can create/update/delete a card.
 
@@ -123,6 +127,32 @@ export async function updateCard(
   return {};
 }
 
+// Updates the card detail fields (title, description, due date, assignee,
+// labels). Thin wrapper around the service so the business logic is testable
+// in integration without a Next.js request context.
+export async function updateCardDetails(
+  cardId: string,
+  updates: CardDetailUpdates,
+): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { error: "You must be signed in to update a card." };
+  }
+
+  const result = await updateCardDetailsService(supabase, { cardId, updates });
+  if (!result.ok) {
+    return { error: result.error };
+  }
+
+  revalidatePath(`/boards/${result.boardId}`);
+  return {};
+}
+
 export async function moveCard(
   cardId: string,
   toColumnId: string,
@@ -192,7 +222,7 @@ export async function moveCard(
 // Re-normalizes a column's card positions to whole-integer spacing when its
 // adjacent positions have drifted within DRIFT_THRESHOLD (repeated midpoint
 // drops between the same two neighbors exhaust the gap). No-op when the
-// column is already within bounds — idempotent and safe to call defensively.
+// column is already within bounds; idempotent and safe to call defensively.
 export async function renormalizeCardPositions(
   columnId: string,
 ): Promise<{ error?: string }> {

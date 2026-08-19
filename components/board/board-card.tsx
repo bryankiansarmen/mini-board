@@ -33,7 +33,7 @@ export function BoardCard({
   }
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
-    // Only respond when the card itself is the target — pressing Enter inside
+    // Only respond when the card itself is the target; pressing Enter inside
     // the rename input must not navigate.
     if (event.target !== event.currentTarget) {
       return;

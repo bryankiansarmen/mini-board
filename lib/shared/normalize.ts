@@ -19,7 +19,7 @@ export function detectPositionDrift(positions: number[]): boolean {
 }
 
 // Re-normalizes items to whole-integer spacing in position order. Uses a
-// stable sort so ties (equal positions) keep their current relative order —
+// stable sort so ties (equal positions) keep their current relative order;
 // re-normalization must never reorder cards, only tighten their spacing.
 export function renormalizePositions<T extends Positioned>(
   items: T[],

@@ -49,7 +49,7 @@ export function InviteButton({
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Clipboard unavailable (e.g. non-secure context) — the code remains
+      // Clipboard unavailable (e.g. non-secure context); the code remains
       // visible on screen for manual copying.
     }
   }

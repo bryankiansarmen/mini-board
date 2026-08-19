@@ -91,7 +91,7 @@ describe("computeCardMove", () => {
       card("b", "col-1", 1),
       card("c", "col-1", 2),
     ];
-    // Dropping b over c — the card immediately after it — lands b back in
+    // Dropping b over c, the card immediately after it, lands b back in
     // its current slot, so the order is unchanged: no DB write needed.
     expect(computeCardMove(cards, "b", "col-1", "c")).toBeNull();
   });

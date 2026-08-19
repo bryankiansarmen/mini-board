@@ -11,7 +11,7 @@ export type ColumnFormState = {
   error?: string;
 };
 
-// Column CRUD is plain RLS-authorized Supabase CRUD — no service-role, no
+// Column CRUD is plain RLS-authorized Supabase CRUD; no service-role, no
 // Route Handler. RLS scopes every operation through the board's workspace
 // membership: any workspace member can create/update/delete a column.
 
@@ -178,7 +178,7 @@ export async function reorderColumn(
 
 // Re-normalizes a board's column positions to whole-integer spacing when
 // adjacent positions have drifted within DRIFT_THRESHOLD. Same semantics as
-// renormalizeCardPositions — no-op when the board is already within bounds.
+// renormalizeCardPositions; no-op when the board is already within bounds.
 export async function renormalizeColumnPositions(
   boardId: string,
 ): Promise<{ error?: string }> {

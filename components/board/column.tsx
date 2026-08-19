@@ -10,16 +10,20 @@ import { deleteCard } from "@/lib/cards/actions";
 import { Card } from "@/components/board/card";
 import { CreateCardForm } from "@/components/board/create-card-form";
 import { DeleteCardModal } from "@/components/board/delete-card-modal";
-import type { ColumnRow, CardRow } from "@/types";
+import type { ColumnRow, CardRow, MemberListItem } from "@/types";
 
 export function Column({
   column,
   cards,
+  members,
   onRequestDelete,
+  onOpenDetail,
 }: {
   column: ColumnRow;
   cards: CardRow[];
+  members: MemberListItem[];
   onRequestDelete: (columnId: string) => void;
+  onOpenDetail: (cardId: string) => void;
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
@@ -211,9 +215,11 @@ export function Column({
                 <Card
                   key={card.id}
                   card={card}
+                  members={members}
                   onRequestDelete={(cardId) =>
                     setCardToDelete(cards.find((c) => c.id === cardId) ?? null)
                   }
+                  onOpenDetail={onOpenDetail}
                 />
               ))}
             </div>
