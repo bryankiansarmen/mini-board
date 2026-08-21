@@ -73,3 +73,12 @@ export type CommentRow = {
   body: string;
   created_at: string;
 };
+
+export type ActivityLogRow = {
+  id: string;
+  board_id: string;
+  actor_id: string;
+  action: string;
+  metadata: Record<string, unknown>;
+  created_at: string;
+};

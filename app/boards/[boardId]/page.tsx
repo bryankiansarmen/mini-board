@@ -10,6 +10,7 @@ import type {
   ChecklistItemRow,
   CommentRow,
   MemberListItem,
+  ActivityLogRow,
 } from "@/types";
 
 export const metadata: Metadata = {
@@ -140,6 +141,16 @@ export default async function BoardPage({
     {},
   );
 
+  // Activity log for the board, newest-first. RLS scopes every row to boards
+  // the caller is a member of. Fetched in parallel with comments for efficiency.
+  const activitiesResult = await supabase
+    .from("activity_log")
+    .select("*")
+    .eq("board_id", boardId)
+    .order("created_at", { ascending: false })
+    .limit(50);
+  const activities = (activitiesResult.data ?? []) as ActivityLogRow[];
+
   return (
     <main className="flex min-h-full flex-1 flex-col">
       <header className="border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
@@ -180,6 +191,7 @@ export default async function BoardPage({
             members={members}
             checklistItemsByCard={checklistItemsByCard}
             commentsByCard={commentsByCard}
+            activities={activities}
             currentUserId={user.id}
           />
         </div>

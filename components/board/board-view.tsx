@@ -23,6 +23,7 @@ import {
 import { Column } from "@/components/board/column";
 import { DeleteColumnModal } from "@/components/board/delete-column-modal";
 import { CardDetailModal } from "@/components/board/card-detail-modal";
+import { ActivityFeed } from "@/components/board/activity-feed";
 import {
   deleteColumn,
   renormalizeColumnPositions,
@@ -43,6 +44,7 @@ import type {
   ChecklistItemRow,
   CommentRow,
   MemberListItem,
+  ActivityLogRow,
 } from "@/types";
 
 export function BoardView({
@@ -52,6 +54,7 @@ export function BoardView({
   members,
   checklistItemsByCard,
   commentsByCard,
+  activities: initialActivities,
   currentUserId,
 }: {
   boardId: string;
@@ -60,6 +63,7 @@ export function BoardView({
   members: MemberListItem[];
   checklistItemsByCard: Record<string, ChecklistItemRow[]>;
   commentsByCard: Record<string, CommentRow[]>;
+  activities: ActivityLogRow[];
   currentUserId: string;
 }) {
   const router = useRouter();
@@ -131,6 +135,9 @@ export function BoardView({
   // Non-blocking error toast for rollback-on-failed-write.
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Activity feed toggle (right sidebar).
+  const [showActivity, setShowActivity] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -357,33 +364,46 @@ export function BoardView({
         onDragCancel={handleDragCancel}
         onDragEnd={handleDragEnd}
       >
-        <SortableContext
-          items={columnIds}
-          strategy={horizontalListSortingStrategy}
-        >
-          <div
-            data-realtime={realtimeStatus}
-            className="flex items-start gap-4 overflow-x-auto pb-4"
+        <div className="flex items-start gap-4">
+          <SortableContext
+            items={columnIds}
+            strategy={horizontalListSortingStrategy}
           >
-            {columns.length === 0 && (
-              <div className="flex h-64 w-full items-center justify-center rounded-lg border-2 border-dashed border-zinc-300 dark:border-zinc-700">
-                <p className="text-sm text-zinc-400 dark:text-zinc-500">
-                  No columns yet — create one above.
-                </p>
-              </div>
-            )}
-            {columns.map((column) => (
-              <Column
-                key={column.id}
-                column={column}
-                cards={cardsByColumn[column.id] ?? []}
-                members={members}
-                onRequestDelete={() => setPendingDelete(column)}
-                onOpenDetail={setDetailCardId}
-              />
-            ))}
-          </div>
-        </SortableContext>
+            <div
+              data-realtime={realtimeStatus}
+              className="flex items-start gap-4 overflow-x-auto pb-4"
+            >
+              {columns.length === 0 && (
+                <div className="flex h-64 w-full items-center justify-center rounded-lg border-2 border-dashed border-zinc-300 dark:border-zinc-700">
+                  <p className="text-sm text-zinc-400 dark:text-zinc-500">
+                    No columns yet — create one above.
+                  </p>
+                </div>
+              )}
+              {columns.map((column) => (
+                <Column
+                  key={column.id}
+                  column={column}
+                  cards={cardsByColumn[column.id] ?? []}
+                  members={members}
+                  onRequestDelete={() => setPendingDelete(column)}
+                  onOpenDetail={setDetailCardId}
+                />
+              ))}
+            </div>
+          </SortableContext>
+
+          {/* Activity toggle button */}
+          <button
+            type="button"
+            onClick={() => setShowActivity(!showActivity)}
+            className="shrink-0 rounded-md border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
+            aria-expanded={showActivity}
+            aria-controls="activity-feed-panel"
+          >
+            {showActivity ? "Hide Activity" : "Activity"}
+          </button>
+        </div>
 
         <DragOverlay>
           {activeCard && (
@@ -395,6 +415,48 @@ export function BoardView({
           )}
         </DragOverlay>
       </DndContext>
+
+      {/* Activity feed sidebar */}
+      {showActivity && (
+        <div
+          id="activity-feed-panel"
+          role="complementary"
+          aria-label="Activity feed"
+          className="fixed inset-y-0 right-0 z-40 w-80 border-l border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-950"
+        >
+          <div className="absolute left-2 top-2">
+            <button
+              type="button"
+              onClick={() => setShowActivity(false)}
+              className="rounded p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+              aria-label="Close activity feed"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M18 6 6 18" />
+                <path d="m6 6 12 12" />
+              </svg>
+            </button>
+          </div>
+          <div className="h-full pt-8">
+            <ActivityFeed
+              boardId={boardId}
+              activities={initialActivities}
+              members={members}
+            />
+          </div>
+        </div>
+      )}
 
       {toast && (
         <div

@@ -6,6 +6,7 @@ import {
   detectPositionDrift,
   renormalizePositions,
 } from "@/lib/shared/normalize";
+import { createActivity } from "@/lib/activity/service";
 
 export type ColumnFormState = {
   error?: string;
@@ -54,6 +55,14 @@ export async function createColumn(
   if (insertError) {
     return { error: insertError.message ?? "Failed to create column." };
   }
+
+  // Log activity (best-effort: failure doesn't block the user action).
+  void createActivity(supabase, {
+    boardId,
+    action: "column_created",
+    metadata: { columnTitle: title },
+    actorId: user.id,
+  });
 
   revalidatePath(`/boards/${boardId}`);
   return {};
@@ -118,13 +127,19 @@ export async function deleteColumn(
 
   const { data: column } = await supabase
     .from("columns")
-    .select("board_id")
+    .select("board_id, title")
     .eq("id", columnId)
     .maybeSingle();
 
   if (!column) {
     return { error: "Column not found." };
   }
+
+  // Fetch card count before delete for the activity log metadata.
+  const { count: cardCount } = await supabase
+    .from("cards")
+    .select("id", { count: "exact", head: true })
+    .eq("column_id", columnId);
 
   const { error: deleteError } = await supabase
     .from("columns")
@@ -134,6 +149,14 @@ export async function deleteColumn(
   if (deleteError) {
     return { error: deleteError.message ?? "Failed to delete column." };
   }
+
+  // Log activity (best-effort: failure doesn't block the user action).
+  void createActivity(supabase, {
+    boardId: column.board_id,
+    action: "column_deleted",
+    metadata: { columnTitle: column.title, cardCount: cardCount ?? 0 },
+    actorId: user.id,
+  });
 
   revalidatePath(`/boards/${column.board_id}`);
   return {};

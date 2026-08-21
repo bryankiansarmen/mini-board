@@ -5,8 +5,10 @@ import {
   reconcileChecklistItems,
   reconcileColumnList,
   reconcileComments,
+  reconcileActivities,
 } from "@/lib/realtime/reconcile";
 import type {
+  ActivityLogRow,
   CardRow,
   ChecklistItemRow,
   ColumnRow,
@@ -302,5 +304,111 @@ describe("reconcileComments", () => {
       commentPayload("DELETE", comment("nope", "card-1")),
     );
     expect(next).toEqual(start);
+  });
+});
+
+const activityLog = (
+  id: string,
+  boardId: string,
+  action: string,
+  createdAt = "2026-01-01T00:00:00.000Z",
+): ActivityLogRow => ({
+  id,
+  board_id: boardId,
+  actor_id: "actor-1",
+  action,
+  metadata: {},
+  created_at: createdAt,
+});
+
+function activityPayload(
+  eventType: "INSERT" | "UPDATE" | "DELETE",
+  row: ActivityLogRow | null,
+): RealtimePostgresChangesPayload<ActivityLogRow> {
+  return {
+    eventType,
+    schema: "public",
+    table: "activity_log",
+    commit_timestamp: "2026-01-01T00:00:00.000Z",
+    new: eventType === "DELETE" ? {} : row ?? {},
+    old: eventType === "INSERT" ? {} : { id: row?.id ?? "" },
+    errors: [],
+  } as RealtimePostgresChangesPayload<ActivityLogRow>;
+}
+
+describe("reconcileActivities", () => {
+  it("appends an INSERT activity sorted newest-first", () => {
+    const start = [
+      activityLog("a", "board-1", "card_created", "2026-01-01T00:00:00.000Z"),
+    ];
+    const next = reconcileActivities(
+      start,
+      activityPayload(
+        "INSERT",
+        activityLog("b", "board-1", "card_moved", "2026-01-02T00:00:00.000Z"),
+      ),
+    );
+    expect(next).toHaveLength(2);
+    expect(next[0]?.id).toBe("b");
+    expect(next[1]?.id).toBe("a");
+  });
+
+  it("ignores UPDATE payloads (activity log is immutable)", () => {
+    const start = [
+      activityLog("a", "board-1", "card_created", "2026-01-01T00:00:00.000Z"),
+    ];
+    const next = reconcileActivities(
+      start,
+      activityPayload(
+        "UPDATE",
+        activityLog("a", "board-1", "card_moved", "2026-01-01T00:00:00.000Z"),
+      ),
+    );
+    expect(next).toEqual(start);
+  });
+
+  it("ignores DELETE payloads (activity log is immutable)", () => {
+    const start = [
+      activityLog("a", "board-1", "card_created", "2026-01-01T00:00:00.000Z"),
+    ];
+    const next = reconcileActivities(
+      start,
+      activityPayload("DELETE", activityLog("a", "board-1", "card_created")),
+    );
+    expect(next).toEqual(start);
+  });
+
+  it("does not duplicate an already-seen INSERT", () => {
+    const start = [
+      activityLog("a", "board-1", "card_created", "2026-01-01T00:00:00.000Z"),
+    ];
+    const next = reconcileActivities(
+      start,
+      activityPayload(
+        "INSERT",
+        activityLog("a", "board-1", "card_created", "2026-01-01T00:00:00.000Z"),
+      ),
+    );
+    expect(next).toHaveLength(1);
+  });
+
+  it("sorts by created_at descending, then id descending as tiebreak", () => {
+    const start: ActivityLogRow[] = [];
+    const next1 = reconcileActivities(
+      start,
+      activityPayload(
+        "INSERT",
+        activityLog("a", "board-1", "card_created", "2026-01-01T12:00:00.000Z"),
+      ),
+    );
+    const next2 = reconcileActivities(
+      next1,
+      activityPayload(
+        "INSERT",
+        activityLog("b", "board-1", "card_moved", "2026-01-01T12:00:00.000Z"),
+      ),
+    );
+    // Same timestamp: b comes first (b > a).
+    expect(next2.map((a) => a.id)).toEqual(["b", "a"]);
   });
 });

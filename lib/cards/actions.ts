@@ -10,6 +10,7 @@ import {
   updateCardDetails as updateCardDetailsService,
   type CardDetailUpdates,
 } from "@/lib/cards/service";
+import { createActivity } from "@/lib/activity/service";
 
 export type CardFormState = {
   error?: string;
@@ -68,6 +69,19 @@ export async function createCard(
   if (insertError) {
     return { error: insertError.message ?? "Failed to create card." };
   }
+
+  // Log activity (best-effort: failure doesn't block the user action).
+  const { data: columnMeta } = await supabase
+    .from("columns")
+    .select("title")
+    .eq("id", columnId)
+    .maybeSingle();
+  void createActivity(supabase, {
+    boardId: column.board_id,
+    action: "card_created",
+    metadata: { cardTitle: title, columnTitle: columnMeta?.title ?? "Unknown" },
+    actorId: user.id,
+  });
 
   revalidatePath(`/boards/${column.board_id}`);
   return {};
@@ -170,7 +184,7 @@ export async function moveCard(
 
   const { data: card } = await supabase
     .from("cards")
-    .select("column_id")
+    .select("column_id, title")
     .eq("id", cardId)
     .maybeSingle();
 
@@ -180,7 +194,7 @@ export async function moveCard(
 
   const { data: sourceColumn } = await supabase
     .from("columns")
-    .select("board_id")
+    .select("board_id, title")
     .eq("id", card.column_id)
     .maybeSingle();
 
@@ -190,7 +204,7 @@ export async function moveCard(
 
   const { data: targetColumn } = await supabase
     .from("columns")
-    .select("board_id")
+    .select("board_id, title")
     .eq("id", toColumnId)
     .maybeSingle();
 
@@ -214,6 +228,18 @@ export async function moveCard(
   if (updateError) {
     return { error: updateError.message ?? "Failed to move card." };
   }
+
+  // Log activity (best-effort: failure doesn't block the user action).
+  void createActivity(supabase, {
+    boardId: sourceColumn.board_id,
+    action: "card_moved",
+    metadata: {
+      cardTitle: card.title,
+      fromColumn: sourceColumn.title,
+      toColumn: targetColumn.title,
+    },
+    actorId: user.id,
+  });
 
   revalidatePath(`/boards/${sourceColumn.board_id}`);
   return {};
@@ -293,7 +319,7 @@ export async function deleteCard(
 
   const { data: card } = await supabase
     .from("cards")
-    .select("column_id")
+    .select("column_id, title")
     .eq("id", cardId)
     .maybeSingle();
 
@@ -303,7 +329,7 @@ export async function deleteCard(
 
   const { data: column } = await supabase
     .from("columns")
-    .select("board_id")
+    .select("board_id, title")
     .eq("id", card.column_id)
     .maybeSingle();
 
@@ -319,6 +345,14 @@ export async function deleteCard(
   if (deleteError) {
     return { error: deleteError.message ?? "Failed to delete card." };
   }
+
+  // Log activity (best-effort: failure doesn't block the user action).
+  void createActivity(supabase, {
+    boardId: column.board_id,
+    action: "card_deleted",
+    metadata: { cardTitle: card.title, columnTitle: column.title },
+    actorId: user.id,
+  });
 
   revalidatePath(`/boards/${column.board_id}`);
   return {};

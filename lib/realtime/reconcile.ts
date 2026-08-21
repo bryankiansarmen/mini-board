@@ -1,5 +1,11 @@
 import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
-import type { CardRow, ChecklistItemRow, ColumnRow, CommentRow } from "@/types";
+import type {
+  ActivityLogRow,
+  CardRow,
+  ChecklistItemRow,
+  ColumnRow,
+  CommentRow,
+} from "@/types";
 
 // Pure, framework-agnostic reconciliation helpers (mirrors
 // lib/shared/normalize.ts). They take a Realtime Postgres Changes payload and
@@ -101,4 +107,32 @@ export function reconcileComments(
     ? comments.map((comment) => (comment.id === incoming.id ? incoming : comment))
     : [...comments, incoming];
   return sortComments(next);
+}
+
+function sortActivities(activities: ActivityLogRow[]): ActivityLogRow[] {
+  return [...activities].sort((a, b) => {
+    if (a.created_at !== b.created_at) {
+      return b.created_at < a.created_at ? -1 : 1;
+    }
+    return b.id < a.id ? -1 : 1;
+  });
+}
+
+// Activity log is append-only: only INSERT events are meaningful. UPDATE and
+// DELETE are ignored (the table has no such RLS policies). Sorted newest-first.
+export function reconcileActivities(
+  activities: ActivityLogRow[],
+  payload: RealtimePostgresChangesPayload<ActivityLogRow>,
+): ActivityLogRow[] {
+  if (payload.eventType !== "INSERT") {
+    return activities;
+  }
+
+  const incoming = payload.new;
+  const exists = activities.some((activity) => activity.id === incoming.id);
+  if (exists) {
+    return activities;
+  }
+
+  return sortActivities([...activities, incoming]);
 }
