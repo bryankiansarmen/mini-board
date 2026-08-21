@@ -63,18 +63,18 @@ export function InviteButton({
       <span className="flex items-center gap-2 text-sm">
         <code
           data-testid="invite-code"
-          className="rounded bg-zinc-100 px-2 py-1 font-mono text-xs tracking-widest text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100"
+          className="rounded bg-[var(--color-surface-raised)] px-2 py-1 font-mono text-xs tracking-widest text-[var(--color-text-primary)]"
         >
           {invite.code}
         </code>
         <button
           type="button"
           onClick={copy}
-          className="rounded border border-zinc-300 px-2 py-1 text-xs text-zinc-600 transition-colors hover:border-indigo-400 hover:text-indigo-600 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-indigo-500 dark:hover:text-indigo-400"
+          className="rounded border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
         >
           {copied ? "Copied!" : "Copy"}
         </button>
-        <span className="text-xs text-zinc-400 dark:text-zinc-500">
+        <span className="text-xs text-[var(--color-text-secondary)]">
           expires {new Date(invite.expiresAt).toLocaleDateString()}
         </span>
       </span>
@@ -87,7 +87,7 @@ export function InviteButton({
       aria-label={`Invite ${workspaceName}`}
       onClick={generate}
       disabled={loading}
-      className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:border-indigo-400 hover:text-indigo-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-indigo-500 dark:hover:text-indigo-400"
+      className="rounded-md border border-[var(--color-border)] px-3 py-1.5 text-sm font-medium text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] focus-visible:outline-offset-1 disabled:cursor-not-allowed disabled:opacity-60"
     >
       {loading ? "Generating…" : "Invite"}
     </button>

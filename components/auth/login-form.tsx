@@ -16,10 +16,10 @@ export function LoginForm({ oauthError }: { oauthError?: string }) {
   return (
     <div className="w-full max-w-sm space-y-6">
       <div className="space-y-1 text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+        <h1 className="text-xl font-semibold tracking-tight text-[var(--color-text-primary)]">
           Log in
         </h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="text-sm text-[var(--color-text-secondary)]">
           Welcome back to MiniBoard.
         </p>
       </div>
@@ -28,7 +28,7 @@ export function LoginForm({ oauthError }: { oauthError?: string }) {
         <div className="space-y-1">
           <label
             htmlFor="email"
-            className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+            className="block text-sm font-medium text-[var(--color-text-secondary)]"
           >
             Email
           </label>
@@ -39,14 +39,14 @@ export function LoginForm({ oauthError }: { oauthError?: string }) {
             autoComplete="email"
             required
             placeholder="you@example.com"
-            className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+            className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-accent)] focus-visible:outline-2 focus-visible:outline-[var(--color-accent)]"
           />
         </div>
 
         <div className="space-y-1">
           <label
             htmlFor="password"
-            className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+            className="block text-sm font-medium text-[var(--color-text-secondary)]"
           >
             Password
           </label>
@@ -56,12 +56,12 @@ export function LoginForm({ oauthError }: { oauthError?: string }) {
             type="password"
             autoComplete="current-password"
             required
-            className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+            className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-accent)] focus-visible:outline-2 focus-visible:outline-[var(--color-accent)]"
           />
         </div>
 
         {error && (
-          <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+          <p role="alert" className="text-sm text-[var(--color-danger)]">
             {error}
           </p>
         )}
@@ -69,7 +69,7 @@ export function LoginForm({ oauthError }: { oauthError?: string }) {
         <button
           type="submit"
           disabled={pending}
-          className="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+          className="w-full rounded-md bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-white transition-colors hover:opacity-90 focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {pending ? "Logging in…" : "Log in"}
         </button>
@@ -77,10 +77,10 @@ export function LoginForm({ oauthError }: { oauthError?: string }) {
 
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-zinc-200 dark:border-zinc-800" />
+          <span className="w-full border-t border-[var(--color-border)]" />
         </div>
-        <div className="relative flex justify-center text-xs uppercase text-zinc-400">
-          <span className="bg-zinc-50 px-2 dark:bg-zinc-950">or</span>
+        <div className="relative flex justify-center text-xs uppercase text-[var(--color-text-secondary)]">
+          <span className="bg-[var(--color-surface-raised)] px-2">or</span>
         </div>
       </div>
 
@@ -88,11 +88,11 @@ export function LoginForm({ oauthError }: { oauthError?: string }) {
         <GoogleSignInButton />
       </form>
 
-      <p className="text-center text-sm text-zinc-500 dark:text-zinc-400">
+      <p className="text-center text-sm text-[var(--color-text-secondary)]">
         No account yet?{" "}
         <Link
           href="/signup"
-          className="font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+          className="font-medium text-[var(--color-accent)] hover:underline"
         >
           Sign up
         </Link>

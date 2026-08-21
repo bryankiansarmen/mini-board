@@ -11,15 +11,15 @@ export function SaveIndicator({
 }) {
   if (error) {
     return (
-      <p role="alert" className="text-xs text-red-600 dark:text-red-400">
+      <p role="alert" className="text-xs text-[var(--color-danger)]">
         {error}
       </p>
     );
   }
   if (pending) {
     return (
-      <span className="inline-flex items-center gap-1.5 text-xs text-zinc-400 dark:text-zinc-500">
-        <span className="inline-block h-3 w-3 animate-spin rounded-full border-[1.5px] border-zinc-400 border-t-transparent dark:border-zinc-500 dark:border-t-transparent" />
+      <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-text-secondary)]">
+        <span className="inline-block h-3 w-3 animate-spin rounded-full border-[1.5px] border-[var(--color-text-secondary)] border-t-transparent" />
         Saving…
       </span>
     );

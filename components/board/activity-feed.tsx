@@ -84,14 +84,14 @@ export function ActivityFeed({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
-        <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+      <div className="border-b border-[var(--color-border)] px-4 py-3">
+        <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">
           Activity
         </h3>
       </div>
       <div className="flex-1 overflow-y-auto px-4 py-2" role="log" aria-label="Activity feed">
         {activities.length === 0 && (
-          <p className="py-8 text-center text-xs text-zinc-400 dark:text-zinc-500">
+          <p className="py-8 text-center text-xs text-[var(--color-text-secondary)]">
             No activity yet.
           </p>
         )}
@@ -101,12 +101,12 @@ export function ActivityFeed({
             return (
               <li
                 key={activity.id}
-                className="flex items-start gap-2 text-xs text-zinc-600 dark:text-zinc-400"
+                className="flex items-start gap-2 text-xs text-[var(--color-text-secondary)]"
               >
                 <span
                   title={actorEmail}
                   aria-label={actorEmail}
-                  className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-semibold text-white dark:bg-indigo-500"
+                  className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent)] text-[10px] font-semibold text-white"
                 >
                   {actorEmail[0]?.toUpperCase() ?? "?"}
                 </span>
@@ -116,7 +116,7 @@ export function ActivityFeed({
                   </p>
                   <time
                     dateTime={activity.created_at}
-                    className="text-[10px] text-zinc-400 dark:text-zinc-500"
+                    className="text-[10px] text-[var(--color-text-secondary)]"
                   >
                     {formatRelativeTime(activity.created_at)}
                   </time>

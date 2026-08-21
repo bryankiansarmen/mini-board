@@ -88,7 +88,7 @@ export function BoardCard({
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       onDoubleClick={canManage ? startEditing : undefined}
-      className="group cursor-pointer rounded-lg border border-zinc-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900"
+      className="group cursor-pointer rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm transition-shadow hover:shadow-md"
     >
       {editing ? (
         <div className="space-y-2">
@@ -106,10 +106,10 @@ export function BoardCard({
             }}
             onBlur={submitRename}
             aria-label="Rename board"
-            className="w-full rounded-md border border-indigo-400 bg-white px-2 py-1.5 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 dark:border-indigo-500 dark:bg-zinc-900 dark:text-zinc-50"
+            className="w-full rounded-md border border-[var(--color-accent)] bg-[var(--color-surface)] px-2 py-1.5 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)]"
           />
           {error && (
-            <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+            <p role="alert" className="text-sm text-[var(--color-danger)]">
               {error}
             </p>
           )}
@@ -117,7 +117,7 @@ export function BoardCard({
       ) : (
         <div className="flex items-center justify-between gap-2">
           <p
-            className="min-w-0 flex-1 truncate text-sm font-medium text-zinc-900 dark:text-zinc-50"
+            className="min-w-0 flex-1 truncate text-sm font-medium text-[var(--color-text-primary)]"
             title={board.title}
           >
             {board.title}
@@ -130,7 +130,7 @@ export function BoardCard({
                 event.stopPropagation();
                 onRequestDelete(board.id);
               }}
-              className="shrink-0 rounded p-1 text-zinc-400 opacity-0 transition-opacity hover:text-red-600 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 group-hover:opacity-100 dark:text-zinc-500 dark:hover:text-red-400"
+              className="shrink-0 rounded p-1 text-[var(--color-text-secondary)] opacity-0 transition-opacity hover:text-[var(--color-danger)] focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-danger)] group-hover:opacity-100"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -156,7 +156,7 @@ export function BoardCard({
       )}
 
       {pending && !editing && (
-        <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+        <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
           Saving…
         </p>
       )}

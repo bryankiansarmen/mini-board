@@ -76,13 +76,13 @@ export function MemberList({
         return (
           <div
             key={member.user_id}
-            className="flex items-center gap-3 rounded-md border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900"
+            className="flex items-center gap-3 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3"
           >
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">
+              <p className="truncate text-sm font-medium text-[var(--color-text-primary)]">
                 {member.email ?? "Unknown user"}
               </p>
-              <p className="text-xs text-zinc-400 dark:text-zinc-500">
+              <p className="text-xs text-[var(--color-text-secondary)]">
                 {owner ? "Owner" : member.role === "admin" ? "Admin" : "Member"}
               </p>
             </div>
@@ -94,7 +94,7 @@ export function MemberList({
                     type="button"
                     disabled={busy}
                     onClick={() => changeRole(member.user_id, "member")}
-                    className="rounded-md border border-zinc-300 px-2.5 py-1 text-xs font-medium text-zinc-600 transition-colors hover:border-indigo-400 hover:text-indigo-600 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-indigo-500 dark:hover:text-indigo-400"
+                    className="rounded-md border border-[var(--color-border)] px-2.5 py-1 text-xs font-medium text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {busy ? "…" : "Make member"}
                   </button>
@@ -104,7 +104,7 @@ export function MemberList({
                     type="button"
                     disabled={busy}
                     onClick={() => changeRole(member.user_id, "admin")}
-                    className="rounded-md border border-zinc-300 px-2.5 py-1 text-xs font-medium text-zinc-600 transition-colors hover:border-indigo-400 hover:text-indigo-600 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-indigo-500 dark:hover:text-indigo-400"
+                    className="rounded-md border border-[var(--color-border)] px-2.5 py-1 text-xs font-medium text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {busy ? "…" : "Make admin"}
                   </button>
@@ -114,7 +114,7 @@ export function MemberList({
                     type="button"
                     disabled={busy}
                     onClick={() => remove(member.user_id)}
-                    className="rounded-md border border-red-300 px-2.5 py-1 text-xs font-medium text-red-600 transition-colors hover:border-red-500 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-800 dark:text-red-400 dark:hover:border-red-500 dark:hover:text-red-300"
+                    className="rounded-md border border-[var(--color-danger-muted)] px-2.5 py-1 text-xs font-medium text-[var(--color-danger)] transition-colors hover:border-[var(--color-danger)] hover:text-[var(--color-danger)] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {busy ? "…" : "Remove"}
                   </button>
@@ -126,7 +126,7 @@ export function MemberList({
       })}
 
       {error && (
-        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+        <p role="alert" className="text-sm text-[var(--color-danger)]">
           {error}
         </p>
       )}

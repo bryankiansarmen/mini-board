@@ -56,7 +56,7 @@ export function DueDateField({ card }: { card: CardRow }) {
 
   return (
     <div>
-      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">
         Due date
       </p>
       {editing ? (
@@ -75,13 +75,13 @@ export function DueDateField({ card }: { card: CardRow }) {
               }
             }}
             onBlur={save}
-            className="rounded-md border border-zinc-300 bg-white px-2.5 py-1.5 text-sm text-zinc-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+            className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1.5 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus-visible:outline-2 focus-visible:outline-[var(--color-accent)]"
           />
           {card.due_date && (
             <button
               type="button"
               onClick={clear}
-              className="rounded-md border border-zinc-300 px-2.5 py-1.5 text-sm text-zinc-500 transition-colors hover:border-red-400 hover:text-red-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-red-500 dark:hover:text-red-400"
+              className="rounded-md border border-[var(--color-border)] px-2.5 py-1.5 text-sm text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-danger)] hover:text-[var(--color-danger)] focus-visible:outline-2 focus-visible:outline-[var(--color-accent)]"
             >
               Clear
             </button>
@@ -92,10 +92,10 @@ export function DueDateField({ card }: { card: CardRow }) {
           <button
             type="button"
             onClick={startEditing}
-            className={`inline-flex items-center gap-1 rounded px-2 py-1 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+            className={`inline-flex items-center gap-1 rounded px-2 py-1 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] ${
               isOverdue(card.due_date)
-                ? "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:hover:bg-amber-900/60"
-                : "bg-zinc-200 text-zinc-700 hover:bg-zinc-300 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                ? "bg-[var(--color-warning)] text-white hover:opacity-90"
+                : "bg-[var(--color-surface-raised)] text-[var(--color-text-primary)] hover:bg-[var(--color-border)]"
             }`}
           >
             <svg
@@ -123,7 +123,7 @@ export function DueDateField({ card }: { card: CardRow }) {
         <button
           type="button"
           onClick={startEditing}
-          className="rounded-md border border-dashed border-zinc-300 px-2.5 py-1 text-sm text-zinc-400 transition-colors hover:border-indigo-400 hover:text-zinc-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-zinc-700 dark:hover:border-indigo-500 dark:hover:text-zinc-400"
+          className="rounded-md border border-dashed border-[var(--color-border)] px-2.5 py-1 text-sm text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-[var(--color-accent)]"
         >
           Set due date
         </button>

@@ -46,7 +46,7 @@ export function AssigneeField({
 
   return (
     <div>
-      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">
         Assignee
       </p>
       {editing ? (
@@ -61,7 +61,7 @@ export function AssigneeField({
           onBlur={() => {
             if (!pending) setEditing(false);
           }}
-          className="w-full rounded-md border border-zinc-300 bg-white px-2.5 py-1.5 text-sm text-zinc-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+          className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1.5 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus-visible:outline-2 focus-visible:outline-[var(--color-accent)]"
         >
           <option value="">Unassigned</option>
           {members.map((member) => (
@@ -74,7 +74,7 @@ export function AssigneeField({
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="inline-flex items-center gap-2 rounded-md border border-transparent px-2 py-1 text-sm text-zinc-700 transition-colors hover:border-zinc-200 hover:bg-zinc-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:bg-zinc-800"
+          className="inline-flex items-center gap-2 rounded-md border border-transparent px-2 py-1 text-sm text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-border)] hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-[var(--color-accent)]"
         >
           <AssigneeAvatar email={assignee.email ?? "?"} />
           <span className="truncate">{assignee.email ?? "Unknown user"}</span>
@@ -83,7 +83,7 @@ export function AssigneeField({
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="rounded-md border border-dashed border-zinc-300 px-2.5 py-1 text-sm text-zinc-400 transition-colors hover:border-indigo-400 hover:text-zinc-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-zinc-700 dark:hover:border-indigo-500 dark:hover:text-zinc-400"
+          className="rounded-md border border-dashed border-[var(--color-border)] px-2.5 py-1 text-sm text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-[var(--color-accent)]"
         >
           Assign
         </button>

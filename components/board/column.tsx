@@ -115,9 +115,9 @@ export function Column({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex w-72 shrink-0 flex-col rounded-lg border border-zinc-200 bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900"
+      className="flex w-72 shrink-0 flex-col rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)]"
     >
-      <div className="group flex items-center justify-between gap-2 border-b border-zinc-200 px-3 py-2.5 dark:border-zinc-800">
+      <div className="group flex items-center justify-between gap-2 border-b border-[var(--color-border)] px-3 py-2.5">
         <div
           className="flex min-w-0 flex-1 items-center gap-2"
           onDoubleClick={!editing ? startEditing : undefined}
@@ -140,12 +140,12 @@ export function Column({
                 }}
                 onBlur={submitRename}
                 aria-label="Rename column"
-                className="w-full rounded-md border border-indigo-400 bg-white px-2 py-1 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 dark:border-indigo-500 dark:bg-zinc-900 dark:text-zinc-50"
+                className="w-full rounded-md border border-[var(--color-accent)] bg-[var(--color-surface)] px-2 py-1 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)]"
               />
               {error && (
                 <p
                   role="alert"
-                  className="text-xs text-red-600 dark:text-red-400"
+                  className="text-xs text-[var(--color-danger)]"
                 >
                   {error}
                 </p>
@@ -153,10 +153,10 @@ export function Column({
             </div>
           ) : (
             <>
-              <h3 className="min-w-0 flex-1 truncate text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+              <h3 className="min-w-0 flex-1 truncate text-sm font-semibold text-[var(--color-text-primary)]">
                 {column.title}
               </h3>
-              <span className="shrink-0 rounded bg-zinc-200 px-1.5 py-0.5 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+              <span className="shrink-0 rounded bg-[var(--color-surface-raised)] px-1.5 py-0.5 text-xs text-[var(--color-text-secondary)]">
                 {cards.length}
               </span>
             </>
@@ -167,7 +167,7 @@ export function Column({
             type="button"
             aria-label={`Delete ${column.title}`}
             onClick={() => onRequestDelete(column.id)}
-            className="shrink-0 rounded p-1 text-zinc-400 opacity-0 transition-opacity hover:text-red-600 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 group-hover:opacity-100 dark:text-zinc-500 dark:hover:text-red-400"
+            className="shrink-0 rounded p-1 text-[var(--color-text-secondary)] opacity-0 transition-opacity hover:text-[var(--color-danger)] focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-danger)] group-hover:opacity-100"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -195,13 +195,13 @@ export function Column({
         ref={setCardDropRef}
         className={`flex-1 space-y-2 p-2 transition-colors ${
           isOver
-            ? "bg-indigo-500/10"
+            ? "bg-[var(--color-accent-ghost)]"
             : ""
         }`}
       >
         {cards.length === 0 ? (
-          <div className="flex h-32 items-center justify-center rounded-md border-2 border-dashed border-zinc-300 dark:border-zinc-700">
-            <p className="px-2 text-center text-xs text-zinc-400 dark:text-zinc-500">
+          <div className="flex h-32 items-center justify-center rounded-md border-2 border-dashed border-[var(--color-border)]">
+            <p className="px-2 text-center text-xs text-[var(--color-text-secondary)]">
               Drop cards here
             </p>
           </div>
@@ -230,7 +230,7 @@ export function Column({
       </div>
 
       {pending && !editing && (
-        <p className="px-3 pb-2 text-xs text-zinc-400 dark:text-zinc-500">
+        <p className="px-3 pb-2 text-xs text-[var(--color-text-secondary)]">
           Saving…
         </p>
       )}

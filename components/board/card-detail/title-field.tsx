@@ -52,7 +52,7 @@ export function TitleField({ card }: { card: CardRow }) {
           }
         }}
         onBlur={save}
-        className="w-full rounded-md border border-transparent bg-transparent px-2 py-1 text-lg font-semibold text-zinc-900 transition-colors hover:border-zinc-200 focus:border-indigo-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 dark:text-zinc-50 dark:hover:border-zinc-700 dark:focus:bg-zinc-900"
+        className="w-full rounded-md border border-transparent bg-transparent px-2 py-1 text-lg font-semibold text-[var(--color-text-primary)] transition-colors hover:border-[var(--color-border)] focus:border-[var(--color-accent)] focus:bg-[var(--color-surface)] focus-visible:outline-2 focus-visible:outline-[var(--color-accent)]"
       />
       <SaveIndicator pending={pending} error={error} />
     </div>

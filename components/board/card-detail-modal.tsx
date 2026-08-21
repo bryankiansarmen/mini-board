@@ -54,7 +54,8 @@ export function CardDetailModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4"
+      style={{ backgroundColor: "var(--color-overlay)" }}
       onClick={onClose}
     >
       <div
@@ -64,7 +65,7 @@ export function CardDetailModal({
         aria-label="Card details"
         tabIndex={-1}
         onClick={(event) => event.stopPropagation()}
-        className="mt-12 w-full max-w-2xl rounded-lg border border-zinc-200 bg-white p-6 shadow-xl focus:outline-none dark:border-zinc-800 dark:bg-zinc-900"
+        className="mt-12 w-full max-w-2xl rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-xl focus:outline-none"
       >
         <TitleField card={card} />
 
@@ -87,7 +88,7 @@ export function CardDetailModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            className="rounded-md border border-[var(--color-border)] px-4 py-2 text-sm font-medium text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] focus-visible:outline-offset-1"
           >
             Close
           </button>

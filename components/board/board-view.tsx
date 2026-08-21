@@ -39,6 +39,7 @@ import { detectPositionDrift } from "@/lib/shared/normalize";
 import { useBoardRealtime } from "@/lib/realtime/useBoardRealtime";
 import { useBoardPresence } from "@/lib/realtime/useBoardPresence";
 import { PresenceStack } from "@/components/board/presence-stack";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { useBoardStore } from "@/lib/store/board";
 import type {
   ColumnRow,
@@ -386,8 +387,8 @@ export function BoardView({
               className="flex items-start gap-4 overflow-x-auto pb-4"
             >
               {columns.length === 0 && (
-                <div className="flex h-64 w-full items-center justify-center rounded-lg border-2 border-dashed border-zinc-300 dark:border-zinc-700">
-                  <p className="text-sm text-zinc-400 dark:text-zinc-500">
+                <div className="flex h-64 w-full items-center justify-center rounded-lg border-2 border-dashed border-[var(--color-border)]">
+                  <p className="text-sm text-[var(--color-text-secondary)]">
                     No columns yet — create one above.
                   </p>
                 </div>
@@ -408,11 +409,14 @@ export function BoardView({
           {/* Presence avatars */}
           <PresenceStack presenceList={presenceList} />
 
+          {/* Theme toggle */}
+          <ThemeToggle />
+
           {/* Activity toggle button */}
           <button
             type="button"
             onClick={() => setShowActivity(!showActivity)}
-            className="shrink-0 rounded-md border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
+            className="shrink-0 rounded-md border border-[var(--color-border)] px-3 py-1.5 text-xs font-medium text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)]"
             aria-expanded={showActivity}
             aria-controls="activity-feed-panel"
           >
@@ -422,8 +426,8 @@ export function BoardView({
 
         <DragOverlay>
           {activeCard && (
-            <div className="w-72 cursor-grabbing rounded-md border border-zinc-200 bg-white p-2.5 pr-8 shadow-xl dark:border-zinc-700 dark:bg-zinc-900">
-              <p className="text-sm text-zinc-900 dark:text-zinc-50">
+            <div className="w-72 cursor-grabbing rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] p-2.5 pr-8 shadow-xl">
+              <p className="text-sm text-[var(--color-text-primary)]">
                 {activeCard.title}
               </p>
             </div>
@@ -437,13 +441,13 @@ export function BoardView({
           id="activity-feed-panel"
           role="complementary"
           aria-label="Activity feed"
-          className="fixed inset-y-0 right-0 z-40 w-80 border-l border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-950"
+          className="fixed inset-y-0 right-0 z-40 w-80 border-l border-[var(--color-border)] bg-[var(--color-surface)] shadow-xl"
         >
           <div className="absolute left-2 top-2">
             <button
               type="button"
               onClick={() => setShowActivity(false)}
-              className="rounded p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+              className="rounded p-1 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
               aria-label="Close activity feed"
             >
               <svg
@@ -476,7 +480,7 @@ export function BoardView({
       {toast && (
         <div
           role="alert"
-          className="fixed bottom-4 right-4 z-50 max-w-sm rounded-lg border border-red-200 bg-white px-4 py-3 text-sm text-red-700 shadow-xl dark:border-red-900/50 dark:bg-zinc-900 dark:text-red-300"
+          className="fixed bottom-4 right-4 z-50 max-w-sm rounded-lg border border-[var(--color-danger)] bg-[var(--color-surface)] px-4 py-3 text-sm text-[var(--color-danger)] shadow-xl"
         >
           {toast}
         </div>

@@ -51,15 +51,15 @@ export default async function MembersPage({
 
   return (
     <main className="flex min-h-full flex-1 flex-col">
-      <header className="border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
+      <header className="border-b border-[var(--color-border)] px-6 py-4">
         <div className="mx-auto w-full max-w-2xl">
           <Link
             href={`/workspaces/${wsId}/boards`}
-            className="text-sm text-zinc-500 transition-colors hover:text-indigo-600 dark:text-zinc-400 dark:hover:text-indigo-400"
+            className="text-sm text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-accent)]"
           >
             ← {workspace.name}
           </Link>
-          <h1 className="mt-1 text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+          <h1 className="mt-1 text-lg font-semibold text-[var(--color-text-primary)]">
             Members
           </h1>
         </div>
@@ -74,7 +74,7 @@ export default async function MembersPage({
             ownerId={workspace.owner_id}
           />
         ) : (
-          <p className="rounded-md border border-dashed border-zinc-300 px-4 py-6 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
+          <p className="rounded-md border border-dashed border-[var(--color-border)] px-4 py-6 text-center text-sm text-[var(--color-text-secondary)]">
             No members yet.
           </p>
         )}

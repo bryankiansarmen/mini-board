@@ -107,7 +107,7 @@ export function Card({
       style={style}
       {...handleProps}
       onClick={!editing ? handleClick : undefined}
-      className="group relative cursor-grab rounded-md border border-zinc-200 bg-white p-2.5 pr-8 transition-colors hover:border-zinc-300 hover:bg-zinc-50 active:cursor-grabbing dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
+      className="group relative cursor-grab rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] p-2.5 pr-8 transition-colors hover:border-[var(--color-border)] hover:bg-[var(--color-surface-raised)] active:cursor-grabbing"
       onDoubleClick={!editing ? startEditing : undefined}
     >
       {editing ? (
@@ -127,17 +127,17 @@ export function Card({
               }
             }}
             onBlur={submitRename}
-            className="w-full rounded-md border border-indigo-400 bg-white px-2 py-1 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 dark:border-indigo-500 dark:bg-zinc-900 dark:text-zinc-50"
+            className="w-full rounded-md border border-[var(--color-accent)] bg-[var(--color-surface)] px-2 py-1 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)]"
           />
           {error && (
-            <p role="alert" className="text-xs text-red-600 dark:text-red-400">
+            <p role="alert" className="text-xs text-[var(--color-danger)]">
               {error}
             </p>
           )}
         </div>
       ) : (
         <>
-          <p className="break-words text-sm text-zinc-900 dark:text-zinc-50">
+          <p className="break-words text-sm text-[var(--color-text-primary)]">
             {card.title}
           </p>
 
@@ -149,7 +149,7 @@ export function Card({
                 <LabelBadge key={label} label={label} />
               ))}
               {card.labels.length > 3 && (
-                <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                <span className="text-xs text-[var(--color-text-secondary)]">
                   +{card.labels.length - 3}
                 </span>
               )}
@@ -166,7 +166,7 @@ export function Card({
               event.stopPropagation();
               onRequestDelete(card.id);
             }}
-            className="absolute right-1.5 top-1.5 rounded p-1 text-zinc-400 opacity-0 transition-opacity hover:text-red-600 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 group-hover:opacity-100 dark:text-zinc-500 dark:hover:text-red-400"
+            className="absolute right-1.5 top-1.5 rounded p-1 text-[var(--color-text-secondary)] opacity-0 transition-opacity hover:text-[var(--color-danger)] focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-danger)] group-hover:opacity-100"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -190,7 +190,7 @@ export function Card({
         </>
       )}
       {pending && !editing && (
-        <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+        <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
           Saving…
         </p>
       )}

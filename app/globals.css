@@ -1,26 +1,161 @@
 @import "tailwindcss";
 
+/* -------------------------------------------------------------------------- */
+/* Design tokens — DESIGN_SYSTEM.md                                           */
+/* Light theme is the default (:root). Dark theme overrides via               */
+/* [data-theme="dark"] on <html>.  When no explicit theme is stored, the     */
+/* prefers-color-scheme media query provides the fallback.                    */
+/* -------------------------------------------------------------------------- */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Color palette */
+  --color-bg: #fafafa;
+  --color-surface: #ffffff;
+  --color-surface-raised: #f5f5f5;
+  --color-border: #e4e4e7;
+  --color-text-primary: #18181b;
+  --color-text-secondary: #71717a;
+  --color-accent: #4f46e5;
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-danger: #dc2626;
+
+  /* Semantic aliases for component usage */
+  --color-overlay: rgba(0, 0, 0, 0.4);
+  --color-accent-ghost: rgba(79, 70, 229, 0.08);
+  --color-focus-ring: rgba(79, 70, 229, 0.4);
+
+  /* Typography */
+  --font-family: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --text-xs: 0.75rem;
+  --text-xs-lh: 1rem;
+  --text-sm: 0.875rem;
+  --text-sm-lh: 1.25rem;
+  --text-base: 1rem;
+  --text-base-lh: 1.5rem;
+  --text-lg: 1.25rem;
+  --text-lg-lh: 1.75rem;
+  --text-xl: 1.5rem;
+  --text-xl-lh: 2rem;
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+
+  /* Spacing (4px base unit) */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 8px 10px -6px rgba(0, 0, 0, 0.1);
+
+  /* Border radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Dark theme */
+[data-theme="dark"] {
+  --color-bg: #121212;
+  --color-surface: #1e1e1e;
+  --color-surface-raised: #262626;
+  --color-border: #2e2e2e;
+  --color-text-primary: #f4f4f5;
+  --color-text-secondary: #a1a1aa;
+  --color-accent: #818cf8;
+  --color-success: #4ade80;
+  --color-warning: #fbbf24;
+  --color-danger: #f87171;
+
+  --color-overlay: rgba(0, 0, 0, 0.5);
+  --color-accent-ghost: rgba(129, 140, 248, 0.08);
+  --color-focus-ring: rgba(129, 140, 248, 0.4);
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4),
+    0 2px 4px -2px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5),
+    0 8px 10px -6px rgba(0, 0, 0, 0.4);
 }
 
+/* System-preference fallback when no explicit theme is stored */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not([data-theme]) {
+    --color-bg: #121212;
+    --color-surface: #1e1e1e;
+    --color-surface-raised: #262626;
+    --color-border: #2e2e2e;
+    --color-text-primary: #f4f4f5;
+    --color-text-secondary: #a1a1aa;
+    --color-accent: #818cf8;
+    --color-success: #4ade80;
+    --color-warning: #fbbf24;
+    --color-danger: #f87171;
+
+    --color-overlay: rgba(0, 0, 0, 0.5);
+    --color-accent-ghost: rgba(129, 140, 248, 0.08);
+    --color-focus-ring: rgba(129, 140, 248, 0.4);
+
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4),
+      0 2px 4px -2px rgba(0, 0, 0, 0.3);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5),
+      0 8px 10px -6px rgba(0, 0, 0, 0.4);
   }
 }
 
+/* Tailwind v4 theme integration — map tokens so utility classes work */
+@theme inline {
+  --color-bg: var(--color-bg);
+  --color-surface: var(--color-surface);
+  --color-surface-raised: var(--color-surface-raised);
+  --color-border: var(--color-border);
+  --color-text-primary: var(--color-text-primary);
+  --color-text-secondary: var(--color-text-secondary);
+  --color-accent: var(--color-accent);
+  --color-success: var(--color-success);
+  --color-warning: var(--color-warning);
+  --color-danger: var(--color-danger);
+  --color-overlay: var(--color-overlay);
+  --color-accent-ghost: var(--color-accent-ghost);
+  --color-focus-ring: var(--color-focus-ring);
+  --font-sans: var(--font-family);
+  --font-mono: var(--font-mono);
+}
+
+/* Base styles */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-family);
+  font-size: var(--text-base);
+  line-height: var(--text-base-lh);
+}
+
+/* Focus ring utility — consistent across all interactive elements */
+*:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Smooth theme transitions */
+html {
+  transition: background-color var(--transition-normal),
+    color var(--transition-normal);
 }

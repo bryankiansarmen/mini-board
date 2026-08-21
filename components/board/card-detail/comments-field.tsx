@@ -136,7 +136,7 @@ export function CommentsField({
 
   return (
     <div>
-      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">
         Comments
       </p>
 
@@ -146,10 +146,10 @@ export function CommentsField({
           return (
             <div
               key={comment.id}
-              className="group rounded-md border border-zinc-200 p-3 dark:border-zinc-700"
+              className="group rounded-md border border-[var(--color-border)] p-3"
             >
               <div className="flex items-start justify-between gap-2">
-                <p className="whitespace-pre-wrap break-words text-sm text-zinc-900 dark:text-zinc-50">
+                <p className="whitespace-pre-wrap break-words text-sm text-[var(--color-text-primary)]">
                   {comment.body}
                 </p>
                 {isOwn && (
@@ -158,10 +158,10 @@ export function CommentsField({
                     aria-label="Delete comment"
                     onClick={() => removeComment(comment)}
                     disabled={pendingCommentId === comment.id}
-                    className="shrink-0 rounded p-0.5 text-zinc-400 opacity-0 transition-opacity hover:text-red-600 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 group-hover:opacity-100 disabled:opacity-50 dark:text-zinc-500 dark:hover:text-red-400"
+                    className="shrink-0 rounded p-0.5 text-[var(--color-text-secondary)] opacity-0 transition-opacity hover:text-[var(--color-danger)] focus:opacity-100 focus-visible:outline-2 focus-visible:outline-[var(--color-danger)] group-hover:opacity-100 disabled:opacity-50"
                   >
                     {pendingCommentId === comment.id ? (
-                      <span className="inline-block h-3 w-3 animate-spin rounded-full border-[1.5px] border-zinc-400 border-t-transparent dark:border-zinc-500 dark:border-t-transparent" />
+                      <span className="inline-block h-3 w-3 animate-spin rounded-full border-[1.5px] border-[var(--color-text-secondary)] border-t-transparent" />
                     ) : (
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -207,10 +207,10 @@ export function CommentsField({
               addComment();
             }
           }}
-          className="w-full resize-none rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder:text-zinc-500"
+          className="w-full resize-none rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1.5 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-[var(--color-accent)] focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] disabled:opacity-50"
         />
         <div className="flex items-center justify-between">
-          <span className="text-xs text-zinc-400 dark:text-zinc-500">
+          <span className="text-xs text-[var(--color-text-secondary)]">
             Cmd/Ctrl+Enter to submit
           </span>
           <div className="flex items-center gap-2">
@@ -218,8 +218,8 @@ export function CommentsField({
               <span
                 className={`text-xs tabular-nums ${
                   input.length > MAX_COMMENT_LENGTH
-                    ? "text-red-600 dark:text-red-400"
-                    : "text-zinc-400 dark:text-zinc-500"
+                    ? "text-[var(--color-danger)]"
+                    : "text-[var(--color-text-secondary)]"
                 }`}
               >
                 {input.length}/{MAX_COMMENT_LENGTH}
@@ -229,7 +229,7 @@ export function CommentsField({
               type="button"
               onClick={addComment}
               disabled={saving || !input.trim()}
-              className="shrink-0 rounded-md bg-indigo-600 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-offset-zinc-900"
+              className="shrink-0 rounded-md bg-[var(--color-accent)] px-3 py-1 text-sm font-medium text-white transition-colors hover:opacity-90 focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] focus-visible:outline-offset-1 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Comment
             </button>
@@ -238,7 +238,7 @@ export function CommentsField({
       </div>
 
       {error && (
-        <p role="alert" className="mt-1.5 text-xs text-red-600 dark:text-red-400">
+        <p role="alert" className="mt-1.5 text-xs text-[var(--color-danger)]">
           {error}
         </p>
       )}

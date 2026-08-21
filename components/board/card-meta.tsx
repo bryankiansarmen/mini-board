@@ -14,7 +14,7 @@ export function initialsFromEmail(email: string): string {
 
 export function LabelBadge({ label }: { label: string }) {
   return (
-    <span className="inline-block max-w-[8rem] truncate rounded bg-zinc-200 px-1.5 py-0.5 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+    <span className="inline-block max-w-[8rem] truncate rounded bg-[var(--color-surface-raised)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-text-primary)]">
       {label}
     </span>
   );
@@ -28,8 +28,8 @@ export function DueDateChip({ dueDate }: { dueDate: string }) {
       title={overdue ? "Overdue" : undefined}
       className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium ${
         overdue
-          ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
-          : "bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+          ? "bg-[var(--color-warning)] text-white"
+          : "bg-[var(--color-surface-raised)] text-[var(--color-text-primary)]"
       }`}
     >
       <svg
@@ -59,7 +59,7 @@ export function AssigneeAvatar({ email }: { email: string }) {
     <span
       title={email}
       aria-label={email}
-      className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-semibold text-white dark:bg-indigo-500"
+      className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-accent)] text-[10px] font-semibold text-white"
     >
       {initialsFromEmail(email)}
     </span>

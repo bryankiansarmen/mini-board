@@ -49,7 +49,7 @@ export function BoardList({
           ))}
         </ul>
       ) : (
-        <p className="rounded-md border border-dashed border-zinc-300 px-4 py-6 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
+        <p className="rounded-md border border-dashed border-[var(--color-border)] px-4 py-6 text-center text-sm text-[var(--color-text-secondary)]">
           No boards yet — create your first board above.
         </p>
       )}

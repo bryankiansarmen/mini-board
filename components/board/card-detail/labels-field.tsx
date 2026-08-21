@@ -59,21 +59,21 @@ export function LabelsField({
 
   return (
     <div>
-      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">
         Labels
       </p>
       <div className="flex flex-wrap items-center gap-1.5">
         {labels.map((label) => (
           <span
             key={label}
-            className="inline-flex items-center gap-1 rounded bg-zinc-200 px-1.5 py-0.5 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+            className="inline-flex items-center gap-1 rounded bg-[var(--color-surface-raised)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-text-primary)]"
           >
             {label}
             <button
               type="button"
               aria-label={`Remove label ${label}`}
               onClick={() => removeLabel(label)}
-              className="rounded p-0.5 text-zinc-400 transition-colors hover:text-red-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 dark:text-zinc-500 dark:hover:text-red-400"
+              className="rounded p-0.5 text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-danger)] focus-visible:outline-2 focus-visible:outline-[var(--color-danger)]"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -114,7 +114,7 @@ export function LabelsField({
                 }
               }}
               onBlur={addLabel}
-              className="w-32 rounded-md border border-indigo-400 bg-white px-2 py-0.5 text-xs text-zinc-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 dark:border-indigo-500 dark:bg-zinc-900 dark:text-zinc-50"
+              className="w-32 rounded-md border border-[var(--color-accent)] bg-[var(--color-surface)] px-2 py-0.5 text-xs text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-[var(--color-accent)]"
             />
             <datalist id={`label-suggestions-${card.id}`}>
               {suggestions.map((suggestion) => (
@@ -126,7 +126,7 @@ export function LabelsField({
           <button
             type="button"
             onClick={() => setAdding(true)}
-            className="rounded border border-dashed border-zinc-300 px-2 py-0.5 text-xs text-zinc-400 transition-colors hover:border-indigo-400 hover:text-zinc-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-zinc-700 dark:hover:border-indigo-500 dark:hover:text-zinc-400"
+            className="rounded border border-dashed border-[var(--color-border)] px-2 py-0.5 text-xs text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-[var(--color-accent)]"
           >
             + Label
           </button>

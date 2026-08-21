@@ -13,7 +13,7 @@ export default async function LoginPage({
   const { error } = await searchParams;
 
   return (
-    <main className="flex min-h-full flex-1 items-center justify-center px-4 py-12">
+    <main className="flex min-h-full flex-1 items-center justify-center bg-[var(--color-surface-secondary)] px-4 py-12">
       <LoginForm oauthError={error} />
     </main>
   );

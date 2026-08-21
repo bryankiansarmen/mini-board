@@ -33,7 +33,7 @@ export function PresenceStack({
           <span
             title={presence.userEmail}
             aria-label={presence.userEmail}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-xs font-semibold text-white ring-2 ring-white dark:bg-indigo-500 dark:ring-zinc-900"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-accent)] text-xs font-semibold text-white ring-2 ring-[var(--color-surface)]"
           >
             {initialsFromEmail(presence.userEmail)}
           </span>
@@ -42,7 +42,7 @@ export function PresenceStack({
 
       {overflow > 0 && (
         <div
-          className="ml-2 text-sm font-medium text-zinc-600 dark:text-zinc-400"
+          className="ml-2 text-sm font-medium text-[var(--color-text-secondary)]"
           aria-label={`${overflow} more users`}
         >
           +{overflow}

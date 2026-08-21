@@ -60,31 +60,31 @@ export default async function BoardsPage({
 
   return (
     <main className="flex min-h-full flex-1 flex-col">
-      <header className="border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
+      <header className="border-b border-[var(--color-border)] px-6 py-4">
         <div className="mx-auto w-full max-w-4xl">
           <div className="flex items-center justify-between">
             <Link
               href="/workspaces"
-              className="text-sm text-zinc-500 transition-colors hover:text-indigo-600 dark:text-zinc-400 dark:hover:text-indigo-400"
+              className="text-sm text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-accent)]"
             >
               ← Workspaces
             </Link>
             <Link
               href={`/workspaces/${wsId}/members`}
-              className="text-sm text-zinc-500 transition-colors hover:text-indigo-600 dark:text-zinc-400 dark:hover:text-indigo-400"
+              className="text-sm text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-accent)]"
             >
               Members
             </Link>
           </div>
-          <h1 className="mt-1 text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+          <h1 className="mt-1 text-lg font-semibold text-[var(--color-text-primary)]">
             {workspace.name}
           </h1>
         </div>
       </header>
 
       <section className="mx-auto w-full max-w-4xl flex-1 px-6 py-8">
-        <div className="mb-8 rounded-lg border border-zinc-200 p-5 dark:border-zinc-800">
-          <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-50">
+        <div className="mb-8 rounded-lg border border-[var(--color-border)] p-5">
+          <h2 className="mb-3 text-base font-semibold text-[var(--color-text-primary)]">
             Create a board
           </h2>
           <CreateBoardForm workspaceId={workspace.id} />
