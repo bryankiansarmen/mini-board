@@ -82,3 +82,9 @@ export type ActivityLogRow = {
   metadata: Record<string, unknown>;
   created_at: string;
 };
+
+export type PresenceState = {
+  userId: string;
+  userEmail: string;
+  joinedAt: number;
+};

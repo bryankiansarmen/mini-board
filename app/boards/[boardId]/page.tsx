@@ -193,6 +193,7 @@ export default async function BoardPage({
             commentsByCard={commentsByCard}
             activities={activities}
             currentUserId={user.id}
+            currentUserEmail={user.email ?? "unknown@example.com"}
           />
         </div>
       </section>

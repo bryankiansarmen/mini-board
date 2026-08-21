@@ -37,6 +37,8 @@ import {
 import { computeCardMove } from "@/lib/cards/position";
 import { detectPositionDrift } from "@/lib/shared/normalize";
 import { useBoardRealtime } from "@/lib/realtime/useBoardRealtime";
+import { useBoardPresence } from "@/lib/realtime/useBoardPresence";
+import { PresenceStack } from "@/components/board/presence-stack";
 import { useBoardStore } from "@/lib/store/board";
 import type {
   ColumnRow,
@@ -56,6 +58,7 @@ export function BoardView({
   commentsByCard,
   activities: initialActivities,
   currentUserId,
+  currentUserEmail,
 }: {
   boardId: string;
   columns: ColumnRow[];
@@ -65,6 +68,7 @@ export function BoardView({
   commentsByCard: Record<string, CommentRow[]>;
   activities: ActivityLogRow[];
   currentUserId: string;
+  currentUserEmail: string;
 }) {
   const router = useRouter();
   // Local state for optimistic column reordering. The server render (from
@@ -171,6 +175,14 @@ export function BoardView({
     columnIds,
     onCardsChange: setCards,
     onColumnsChange: setColumns,
+  });
+
+  // Board-scoped presence tracking via Broadcast channel. Shows which users
+  // are currently viewing the board as a stacked avatar list.
+  const presenceList = useBoardPresence({
+    boardId,
+    currentUserId,
+    currentUserEmail,
   });
 
   // distance: 5 keeps plain clicks and double-clicks working on the card and
@@ -392,6 +404,9 @@ export function BoardView({
               ))}
             </div>
           </SortableContext>
+
+          {/* Presence avatars */}
+          <PresenceStack presenceList={presenceList} />
 
           {/* Activity toggle button */}
           <button
