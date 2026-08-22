@@ -11,12 +11,37 @@ import { changeMemberRole, removeMember } from "@/lib/members/service";
 const password = "correct-horse-battery-staple";
 
 let service: SupabaseClient;
+let memberClient: SupabaseClient;
+let outsiderClient: SupabaseClient;
 let ownerId: string;
 let adminId: string;
 let memberId: string;
 let targetId: string;
 let outsiderId: string;
 let workspaceId: string;
+
+async function userClient(email: string): Promise<SupabaseClient> {
+  const authClient = createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  );
+  const { data, error } = await authClient.auth.signInWithPassword({
+    email,
+    password,
+  });
+  if (error || !data.session) {
+    throw new Error(`failed to sign in ${email}: ${error?.message}`);
+  }
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      global: {
+        headers: { Authorization: `Bearer ${data.session.access_token}` },
+      },
+    },
+  );
+}
 
 beforeAll(async () => {
   service = createSupabaseClient(
@@ -60,6 +85,9 @@ beforeAll(async () => {
     { workspace_id: workspaceId, user_id: memberId, role: "member" },
     { workspace_id: workspaceId, user_id: targetId, role: "member" },
   ]);
+
+  memberClient = await userClient(`int-member-${stamp}@example.com`);
+  outsiderClient = await userClient(`int-outsider-${stamp}@example.com`);
 });
 
 afterAll(async () => {
@@ -212,5 +240,85 @@ describe("changeMemberRole", () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.status).toBe(404);
+  });
+});
+
+describe("workspace_members: direct RLS checks", () => {
+  it("returns member list to a workspace member", async () => {
+    const { data, error } = await memberClient
+      .from("workspace_members")
+      .select("user_id, role")
+      .eq("workspace_id", workspaceId);
+
+    expect(error).toBeNull();
+    expect((data ?? []).length).toBeGreaterThan(0);
+  });
+
+  it("returns zero rows to a non-member (RLS negative test)", async () => {
+    const { data, error } = await outsiderClient
+      .from("workspace_members")
+      .select("user_id")
+      .eq("workspace_id", workspaceId);
+
+    expect(error).toBeNull();
+    expect(data ?? []).toHaveLength(0);
+  });
+
+  it("denies an outsider from directly inserting a member row (RLS negative test)", async () => {
+    const { error } = await outsiderClient
+      .from("workspace_members")
+      .insert({
+        workspace_id: workspaceId,
+        user_id: outsiderId,
+        role: "admin",
+      });
+
+    expect(error).not.toBeNull();
+  });
+
+  it("denies a plain member from directly escalating role to admin (RLS negative test)", async () => {
+    const { error, data } = await memberClient
+      .from("workspace_members")
+      .update({ role: "admin" })
+      .eq("workspace_id", workspaceId)
+      .eq("user_id", memberId)
+      .select("role");
+
+    if (error) {
+      expect(error.message.toLowerCase()).toContain("row-level security");
+    } else {
+      expect(data ?? []).toHaveLength(0);
+    }
+
+    const { data: membership } = await service
+      .from("workspace_members")
+      .select("role")
+      .eq("workspace_id", workspaceId)
+      .eq("user_id", memberId)
+      .single();
+    expect(membership?.role).toBe("member");
+  });
+
+  it("denies a plain member from directly removing another member (RLS negative test)", async () => {
+    const { error, data } = await memberClient
+      .from("workspace_members")
+      .delete()
+      .eq("workspace_id", workspaceId)
+      .eq("user_id", targetId)
+      .select("user_id");
+
+    if (error) {
+      expect(error.message.toLowerCase()).toContain("row-level security");
+    } else {
+      expect(data ?? []).toHaveLength(0);
+    }
+
+    const { data: stillMember } = await service
+      .from("workspace_members")
+      .select("user_id")
+      .eq("workspace_id", workspaceId)
+      .eq("user_id", targetId)
+      .maybeSingle();
+    expect(stillMember).not.toBeNull();
   });
 });

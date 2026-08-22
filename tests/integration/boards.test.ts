@@ -198,6 +198,28 @@ describe("boards: rename", () => {
     expect(error).toBeNull();
     expect(data?.title).toBe("Owner Renamed");
   });
+
+  it("denies a non-member from renaming a board (RLS negative test)", async () => {
+    const board = await createBoard(ownerClient, "Protected Rename Board", 42);
+    const { error, data } = await outsiderClient
+      .from("boards")
+      .update({ title: "Hacked Board Title" })
+      .eq("id", board.id)
+      .select("title");
+
+    if (error) {
+      expect(error.message.toLowerCase()).toContain("row-level security");
+    } else {
+      expect(data ?? []).toHaveLength(0);
+    }
+
+    const { data: stillThere } = await service
+      .from("boards")
+      .select("title")
+      .eq("id", board.id)
+      .single();
+    expect(stillThere?.title).toBe("Protected Rename Board");
+  });
 });
 
 describe("boards: delete", () => {
@@ -258,6 +280,29 @@ describe("boards: delete", () => {
       .eq("id", board.id)
       .maybeSingle();
     expect(stillThere?.title).toBe("Protected Board");
+  });
+
+  it("DENIES a non-member (outsider) from deleting a board (RLS negative test)", async () => {
+    const board = await createBoard(ownerClient, "Outsider Protected Board", 53);
+
+    const { error, data } = await outsiderClient
+      .from("boards")
+      .delete()
+      .eq("id", board.id)
+      .select("id");
+
+    if (error) {
+      expect(error.message.toLowerCase()).toContain("row-level security");
+    } else {
+      expect(data ?? []).toHaveLength(0);
+    }
+
+    const { data: stillThere } = await service
+      .from("boards")
+      .select("id, title")
+      .eq("id", board.id)
+      .maybeSingle();
+    expect(stillThere?.title).toBe("Outsider Protected Board");
   });
 });
 
