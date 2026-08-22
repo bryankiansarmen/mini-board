@@ -5,7 +5,7 @@ import type { CommentRow } from "@/types";
 // can exercise them against real RLS without a Next.js request context (same
 // pattern as lib/checklist/service.ts). Comments are append-only and immutable:
 // a member creates a comment and may delete only their own; there is no edit
-// path (PRD FR-9).
+// path.
 
 export const MAX_COMMENT_LENGTH = 2000;
 
