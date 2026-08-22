@@ -11,17 +11,20 @@ export function useTheme() {
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
-    if (stored === "light" || stored === "dark") {
-      setThemeState(stored);
-      document.documentElement.setAttribute("data-theme", stored);
-    } else {
-      // No stored preference: use system preference but don't set data-theme,
-      // letting the @media query in globals.css handle it.
-      const sys = window.matchMedia("(prefers-color-scheme: dark)").matches
+    const initial: Theme =
+      stored === "light" || stored === "dark"
+        ? stored
+        : window.matchMedia("(prefers-color-scheme: dark)").matches
         ? "dark"
         : "light";
-      setThemeState(sys);
-    }
+
+    document.documentElement.setAttribute("data-theme", initial);
+
+    const timer = requestAnimationFrame(() => {
+      setThemeState(initial);
+    });
+
+    return () => cancelAnimationFrame(timer);
   }, []);
 
   const toggleTheme = () => {

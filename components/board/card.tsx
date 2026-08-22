@@ -6,18 +6,23 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { updateCard } from "@/lib/cards/actions";
 import { AssigneeAvatar, DueDateChip, LabelBadge } from "@/components/board/card-meta";
-import type { CardRow, MemberListItem } from "@/types";
+import { CardMenu } from "@/components/board/card-menu";
+import type { CardRow, ColumnRow, MemberListItem } from "@/types";
 
 export function Card({
   card,
+  columns,
   members,
   onRequestDelete,
   onOpenDetail,
+  onMoveCard,
 }: {
   card: CardRow;
+  columns: ColumnRow[];
   members: MemberListItem[];
   onRequestDelete: (cardId: string) => void;
   onOpenDetail: (cardId: string) => void;
+  onMoveCard: (cardId: string, targetColumnId: string) => void;
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
@@ -105,9 +110,23 @@ export function Card({
     <div
       ref={setNodeRef}
       style={style}
+      tabIndex={editing ? -1 : 0}
       {...handleProps}
       onClick={!editing ? handleClick : undefined}
-      className="group relative cursor-grab rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] p-2.5 pr-8 transition-colors hover:border-[var(--color-border)] hover:bg-[var(--color-surface-raised)] active:cursor-grabbing"
+      onKeyDown={
+        !editing
+          ? (event) => {
+              if (
+                (event.key === "Enter" || event.key === " ") &&
+                event.target === event.currentTarget
+              ) {
+                event.preventDefault();
+                onOpenDetail(card.id);
+              }
+            }
+          : undefined
+      }
+      className="group relative cursor-grab rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] p-2.5 pr-14 transition-colors hover:border-[var(--color-border)] hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] active:cursor-grabbing"
       onDoubleClick={!editing ? startEditing : undefined}
     >
       {editing ? (
@@ -141,16 +160,16 @@ export function Card({
             {card.title}
           </p>
 
-          {card.labels.length > 0 ||
+          {(card.labels ?? []).length > 0 ||
           card.due_date ||
           card.assignee_id ? (
             <div className="mt-1.5 flex flex-wrap items-center gap-1">
-              {card.labels.slice(0, 3).map((label) => (
+              {(card.labels ?? []).slice(0, 3).map((label) => (
                 <LabelBadge key={label} label={label} />
               ))}
-              {card.labels.length > 3 && (
+              {(card.labels ?? []).length > 3 && (
                 <span className="text-xs text-[var(--color-text-secondary)]">
-                  +{card.labels.length - 3}
+                  +{(card.labels ?? []).length - 3}
                 </span>
               )}
               {card.due_date && <DueDateChip dueDate={card.due_date} />}
@@ -158,35 +177,47 @@ export function Card({
             </div>
           ) : null}
 
-          <button
-            type="button"
-            aria-label={`Delete ${card.title}`}
-            onPointerDown={(event) => event.stopPropagation()}
-            onClick={(event) => {
-              event.stopPropagation();
-              onRequestDelete(card.id);
-            }}
-            className="absolute right-1.5 top-1.5 rounded p-1 text-[var(--color-text-secondary)] opacity-0 transition-opacity hover:text-[var(--color-danger)] focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-danger)] group-hover:opacity-100"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
+          <div className="absolute right-1.5 top-1.5 flex items-center gap-0.5">
+            <CardMenu
+              cardId={card.id}
+              cardTitle={card.title}
+              currentColumnId={card.column_id}
+              columns={columns}
+              onMoveCard={onMoveCard}
+              onOpenDetail={onOpenDetail}
+              onRequestDelete={onRequestDelete}
+            />
+
+            <button
+              type="button"
+              aria-label={`Delete ${card.title}`}
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={(event) => {
+                event.stopPropagation();
+                onRequestDelete(card.id);
+              }}
+              className="rounded p-1 text-[var(--color-text-secondary)] opacity-0 transition-opacity hover:text-[var(--color-danger)] focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-danger)] group-hover:opacity-100"
             >
-              <path d="M3 6h18" />
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-              <line x1="10" x2="10" y1="11" y2="17" />
-              <line x1="14" x2="14" y1="11" y2="17" />
-            </svg>
-          </button>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M3 6h18" />
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                <line x1="10" x2="10" y1="11" y2="17" />
+                <line x1="14" x2="14" y1="11" y2="17" />
+              </svg>
+            </button>
+          </div>
         </>
       )}
       {pending && !editing && (

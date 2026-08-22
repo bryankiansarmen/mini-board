@@ -8,22 +8,35 @@ import { CSS } from "@dnd-kit/utilities";
 import { renameColumn } from "@/lib/columns/actions";
 import { deleteCard } from "@/lib/cards/actions";
 import { Card } from "@/components/board/card";
+import { ColumnMenu } from "@/components/board/column-menu";
 import { CreateCardForm } from "@/components/board/create-card-form";
 import { DeleteCardModal } from "@/components/board/delete-card-modal";
 import type { ColumnRow, CardRow, MemberListItem } from "@/types";
 
 export function Column({
   column,
+  columns,
+  isFirst,
+  isLast,
   cards,
   members,
   onRequestDelete,
   onOpenDetail,
+  onMoveCard,
+  onMoveColumnLeft,
+  onMoveColumnRight,
 }: {
   column: ColumnRow;
+  columns: ColumnRow[];
+  isFirst: boolean;
+  isLast: boolean;
   cards: CardRow[];
   members: MemberListItem[];
   onRequestDelete: (columnId: string) => void;
   onOpenDetail: (cardId: string) => void;
+  onMoveCard: (cardId: string, targetColumnId: string) => void;
+  onMoveColumnLeft: () => void;
+  onMoveColumnRight: () => void;
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
@@ -163,31 +176,42 @@ export function Column({
           )}
         </div>
         {!editing && (
-          <button
-            type="button"
-            aria-label={`Delete ${column.title}`}
-            onClick={() => onRequestDelete(column.id)}
-            className="shrink-0 rounded p-1 text-[var(--color-text-secondary)] opacity-0 transition-opacity hover:text-[var(--color-danger)] focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-danger)] group-hover:opacity-100"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
+          <div className="flex items-center gap-0.5 shrink-0">
+            <ColumnMenu
+              columnId={column.id}
+              columnTitle={column.title}
+              isFirst={isFirst}
+              isLast={isLast}
+              onMoveLeft={onMoveColumnLeft}
+              onMoveRight={onMoveColumnRight}
+              onRequestDelete={onRequestDelete}
+            />
+            <button
+              type="button"
+              aria-label={`Delete ${column.title}`}
+              onClick={() => onRequestDelete(column.id)}
+              className="shrink-0 rounded p-1 text-[var(--color-text-secondary)] opacity-0 transition-opacity hover:text-[var(--color-danger)] focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-danger)] group-hover:opacity-100"
             >
-              <path d="M3 6h18" />
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-              <line x1="10" x2="10" y1="11" y2="17" />
-              <line x1="14" x2="14" y1="11" y2="17" />
-            </svg>
-          </button>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M3 6h18" />
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                <line x1="10" x2="10" y1="11" y2="17" />
+                <line x1="14" x2="14" y1="11" y2="17" />
+              </svg>
+            </button>
+          </div>
         )}
       </div>
 
@@ -215,11 +239,13 @@ export function Column({
                 <Card
                   key={card.id}
                   card={card}
+                  columns={columns}
                   members={members}
                   onRequestDelete={(cardId) =>
                     setCardToDelete(cards.find((c) => c.id === cardId) ?? null)
                   }
                   onOpenDetail={onOpenDetail}
+                  onMoveCard={onMoveCard}
                 />
               ))}
             </div>

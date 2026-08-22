@@ -465,7 +465,7 @@ test("card detail fields save independently and persist after a reload", async (
   // The card list shows the metadata.
   await expect(page.getByText("frontend", { exact: true })).toBeVisible();
   await expect(page.getByText("Dec 15", { exact: true })).toBeVisible();
-  await expect(page.getByTitle(email)).toBeVisible();
+  await expect(page.getByTitle(email).first()).toBeVisible();
 
   // Everything survives a hard reload.
   await page.reload();
@@ -474,7 +474,7 @@ test("card detail fields save independently and persist after a reload", async (
   ).toBeVisible();
   await expect(page.getByText("frontend", { exact: true })).toBeVisible();
   await expect(page.getByText("Dec 15", { exact: true })).toBeVisible();
-  await expect(page.getByTitle(email)).toBeVisible();
+  await expect(page.getByTitle(email).first()).toBeVisible();
 
   // Reopen and confirm every field still holds its value.
   await page.getByText("Edit Me", { exact: true }).click();

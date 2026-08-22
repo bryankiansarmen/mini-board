@@ -130,7 +130,7 @@ export function BoardView({
   const labelSuggestions = useMemo(() => {
     const seen = new Set<string>();
     for (const card of cards) {
-      for (const label of card.labels) {
+      for (const label of card.labels ?? []) {
         seen.add(label);
       }
     }
@@ -353,6 +353,68 @@ export function BoardView({
     });
   }
 
+  async function handleMoveCard(cardId: string, targetColumnId: string) {
+    const activeCard = cards.find((c) => c.id === cardId);
+    if (!activeCard || activeCard.column_id === targetColumnId) return;
+
+    const targetCards = cards.filter((c) => c.column_id === targetColumnId);
+    const newPosition = calculatePositionAt(targetCards, targetCards.length);
+
+    const previous = cards;
+    moveCardOptimistic(cardId, targetColumnId, newPosition);
+    setCards(useBoardStore.getState().cards);
+
+    const result = await moveCard(cardId, targetColumnId, newPosition);
+    if (result.error) {
+      rollbackCards(previous);
+      setCards(previous);
+      showToast(`Couldn't move card: ${result.error}`);
+      return;
+    }
+
+    const current = useBoardStore.getState().cards;
+    const targetPositions = current
+      .filter((card) => card.column_id === targetColumnId)
+      .map((card) => card.position);
+    if (detectPositionDrift(targetPositions)) {
+      await renormalizeCardPositions(targetColumnId);
+    }
+
+    router.refresh();
+  }
+
+  async function handleMoveColumn(
+    columnId: string,
+    direction: "left" | "right",
+  ) {
+    const currentIndex = columns.findIndex((c) => c.id === columnId);
+    if (currentIndex === -1) return;
+    const targetIndex =
+      direction === "left" ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= columns.length) return;
+
+    const previous = columns;
+    const reordered = arrayMove(columns, currentIndex, targetIndex);
+    const newPosition = calculatePositionAt(reordered, targetIndex);
+
+    setColumns(reordered);
+    const result = await reorderColumn(columnId, newPosition);
+    if (result.error) {
+      setColumns(previous);
+      showToast(`Couldn't reorder column: ${result.error}`);
+      return;
+    }
+
+    const boardId = reordered[0]?.board_id;
+    if (
+      boardId &&
+      detectPositionDrift(reordered.map((column) => column.position))
+    ) {
+      await renormalizeColumnPositions(boardId);
+    }
+    router.refresh();
+  }
+
   function confirmDelete() {
     if (!pendingDelete) return;
 
@@ -393,14 +455,20 @@ export function BoardView({
                   </p>
                 </div>
               )}
-              {columns.map((column) => (
+              {columns.map((column, idx) => (
                 <Column
                   key={column.id}
                   column={column}
+                  columns={columns}
+                  isFirst={idx === 0}
+                  isLast={idx === columns.length - 1}
                   cards={cardsByColumn[column.id] ?? []}
                   members={members}
                   onRequestDelete={() => setPendingDelete(column)}
                   onOpenDetail={setDetailCardId}
+                  onMoveCard={handleMoveCard}
+                  onMoveColumnLeft={() => handleMoveColumn(column.id, "left")}
+                  onMoveColumnRight={() => handleMoveColumn(column.id, "right")}
                 />
               ))}
             </div>
